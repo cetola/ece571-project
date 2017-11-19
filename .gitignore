@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Folders for testing individual controllers
+nand-con/
+sd-con/
+spi-con/
+top-sim/
