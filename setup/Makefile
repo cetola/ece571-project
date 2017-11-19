@@ -26,6 +26,7 @@ ifeq ($(MODULES),all)
 else ifeq ($(MODULES),nand)
 	#NAND Flash
 	vlog flash_interface.sv
+	vlog flash_datastore.sv
 ifeq ($(MODE),puresim)
 	vlog ACounter.v
 	vlog ErrLoc.v
@@ -55,7 +56,7 @@ run:
 
 run-nand:
 
-	vsim -c -do nand.do nfcm_tb
+	vsim -c -do nand.do flash_tb
 
 clean:
 	rm -rf modelsim.ini work work.puresim work.veloce transcript veloce.log veloce.map veloce.med velrunopts.ini tbxbindings.h

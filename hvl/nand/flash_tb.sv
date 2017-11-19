@@ -1,8 +1,16 @@
+// Module: flash_tb.sv
+// Authors:
+// Stephano Cetola <cetola@pdx.edu>
+//
+// Description:
+// NAND flash test bench
+
 `timescale 1 ns / 1 fs
 
-module nfcm_tb();
+module flash_tb();
 
- reg clk,rst;
+ logic clk,rst;
+
  wire [7:0] DIO;
  wire CLE;// -- CLE
  wire ALE;//  -- ALE
@@ -126,6 +134,8 @@ flash_interface nand_flash(
     .R_nB(R_nB), //-- R/~B
     .rst(rst)
 );
+
+flash_datastore ds(nand_flash);
 
 // --------------------------------------------------------------------
 // --------------------------------------------------------------------
