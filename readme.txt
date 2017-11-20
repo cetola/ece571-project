@@ -16,6 +16,6 @@ cp hdl/nand/* nand-con/
 cp hvl/nand/* nand-con/
 cp setup/* nand-con/
 cd nand-con
-make lib
-make build
+make MODULES=nand lib
+make MODULES=nand build
 make nand-run

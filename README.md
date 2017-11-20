@@ -11,14 +11,14 @@ hvl - testbench files
 
 ### Setup Instructions
 
-#### Testing NAND on Questa Sim 
+#### Testing NAND on Questa Sim
 ```bash
 mkdir nand-con  
 cp hdl/nand/* nand-con/  
 cp hvl/nand/* nand-con/  
 cp setup/* nand-con/  
 cd nand-con  
-make lib  
-make build  
-make nand-run 
+make MODULES=nand lib  
+make MODULES=nand build  
+make nand-run
 ```
