@@ -183,8 +183,8 @@ assign Flash_BF_we = DIS & F_we;
 
 assign Ecc_en = enEcc & ecc_en_tfsm;
 
-
-// ebr_buffer buff( 
+//TODO: BRAM buffer
+// ebr_buffer buff(
 //           .DataInA(BF_din),
 //           .QA(QA_1),
 //           .AddressA(BF_ad),

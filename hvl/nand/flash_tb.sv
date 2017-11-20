@@ -12,32 +12,26 @@ module flash_tb();
  logic clk,rst;
 
  wire [7:0] DIO;
- wire CLE;// -- CLE
- wire ALE;//  -- ALE
- wire WE_n;// -- ~WE
- wire RE_n; //-- ~RE
- wire CE_n; //-- ~CE
- wire R_nB; //-- R/~B
+ wire CLE, ALE, WE_n, RE_n, CE_n, R_nB;
 
- reg BF_sel;
- reg [10:0] BF_ad;
- reg [7:0] BF_din;
- reg BF_we;
- reg [15:0] RWA; //-- row addr
+ logic BF_sel, BF_we;
+ logic [10:0] BF_ad;
+ logic [7:0] BF_din;
+ logic [15:0] RWA; //-- row addr
  wire [7:0] BF_dou;
 
  wire PErr ; // -- progr err
  wire EErr ; // -- erase err
  wire RErr ;
 
- reg [2:0] nfc_cmd; // -- command see below
- reg nfc_strt;//  -- pos edge (pulse) to start
+ logic [2:0] nfc_cmd; // -- command see below
+ logic nfc_strt;//  -- pos edge (pulse) to start
  wire nfc_done;//  -- operation finished if '1'
 
 
-reg[7:0] memory[0:2047];
+logic [7:0] memory[0:2047];
 
-reg [7:0] temp;
+logic [7:0] temp;
 
 //TODO: BRAM
 
@@ -272,7 +266,7 @@ begin
        temp<=memory[i];
        BF_ad<=#3 BF_ad+1;
     end
-
+   $display("value: \t \t %p >> read", temp);
    if(RErr)
      $display($time,"  %m  \t \t  << ecc error >>");
    else

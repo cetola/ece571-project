@@ -13,6 +13,6 @@ interface flash_interface(
   input RE_n,      //read enable
   input CE_n,      //chip enable
   output reg R_nB, //flash ready, "not busy"
-  input rst       //reset
+  input rst        //reset
 );
 endinterface

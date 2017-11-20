@@ -4,6 +4,8 @@
 //
 // Description:
 // NAND flash datastore
+// Some day this should be backed up by BRAM or something similar
+
 `timescale 1 ns / 1 fs
 
 module flash_datastore(flash_interface fi);
