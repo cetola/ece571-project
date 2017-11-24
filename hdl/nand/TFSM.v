@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>>>>>>>>>> COPYRIGHT NOTICE <<<<<<<<<<<<<<<<<<<<<<<<<
 //-------------------------------------------------------------------------
-//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation      
-// 
+//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation
+//
 //-------------------------------------------------------------------------
 // Permission:
 //
@@ -31,7 +31,7 @@
 //
 //    web: http://www.latticesemi.com/
 //    email: techsupport@latticesemi.com
-// 
+//
 //-------------------------------------------------------------------------
 //
 // Revision History :
@@ -41,7 +41,7 @@
 //   v01.1:| J.T    :| 06/21/09  :| just use one buffer
 // --------------------------------------------------------------------
 //
-// 
+//
 //Description of module:
 //--------------------------------------------------------------------------------
 // Timing FSM creating all the necessary control signals for the nand-flash memory.
@@ -64,24 +64,24 @@ module TFSM(
   start,
   cmd_code,
   ecc_en,
-  Done 
+  Done
 )/*synthesis ugroup="mfsm_group" */;
-  
-  output reg CLE ; //-- CLE               
-  output reg ALE ; //-- ALE               
-  output reg WE_n; // -- ~WE              
-  output reg RE_n; // -- ~RE              
-  output reg CE_n; // -- ~CE              
-  output reg DOS ; // -- data out strobe  
-  output reg DIS ; //  -- data in strobe  
-  output reg cnt_en; //-- ca counter ce   
-  input TC3 ; //-- term counts         
-  input TC2048;                     
-  input CLK ;                        
-  input RES ;                        
-  input start;                       
-  input [2:0] cmd_code; 
-  output reg Done;                  
+
+  output reg CLE ; //-- CLE
+  output reg ALE ; //-- ALE
+  output reg WE_n; // -- ~WE
+  output reg RE_n; // -- ~RE
+  output reg CE_n; // -- ~CE
+  output reg DOS ; // -- data out strobe
+  output reg DIS ; //  -- data in strobe
+  output reg cnt_en; //-- ca counter ce
+  input TC3 ; //-- term counts
+  input TC2048;
+  input CLK ;
+  input RES ;
+  input start;
+  input [2:0] cmd_code;
+  output reg Done;
   output reg ecc_en;
 
 // Command codes:
@@ -94,7 +94,7 @@ module TFSM(
 // 111 -Data Write (w TC2048)
 // others'll return to Init
 
-parameter Init=0, S_Start=1, S_CE=2, 
+parameter Init=0, S_Start=1, S_CE=2,
 S_CLE=3, S_CmdOut=4, S_WaitCmd=5, DoneCmd=6, Finish=7, // Cmd latch
 S_ALE=8, S_ADout=9, WaitAd=10, DoneAd=11, // Addr latch
 S_RE1=12, WaitR1=13, WaitR2=14, DoneR1=15,// -- Read data 1
@@ -166,19 +166,19 @@ end else begin//            -- default values
         CE_n <= 0;
       end else if (cmd_code_int ==3'b001) begin
         NxST <= S_ALE;
-        CE_n <= 0;        
+        CE_n <= 0;
       end else if (cmd_code_int ==3'b010) begin
         NxST <= S_RE1;
-        CE_n <= 0;        
+        CE_n <= 0;
       end else if (cmd_code_int[2:1]==2'b10) begin
         NxST <= S_RE;
-        CE_n <= 0;        
+        CE_n <= 0;
       end else if (cmd_code_int[2:1] ==2'b11) begin
         NxST <= S_WE;
-        CE_n <= 0;        
+        CE_n <= 0;
       end else
         NxST <= Init;
-    end 
+    end
     S_CLE:begin
       CE_n <=0;
       CLE <= 1;
@@ -200,12 +200,12 @@ end else begin//            -- default values
       NxST <= DoneCmd;
     end
     DoneCmd:begin
-      Done_i <=1;      
+      Done_i <=1;
       CE_n <= 0;
       CLE <= 1;
       DOS <= 1;
       NxST <= Finish;
-    end  
+    end
     Finish:begin
       DIS <=1; // --1226
       if (start)
@@ -256,10 +256,10 @@ end else begin//            -- default values
       NxST <= DoneR1;
     end
     DoneR1:begin
-      Done_i <= 1; 
-      cnt_en <=1;   
+      Done_i <= 1;
+      cnt_en <=1;
       NxST <= Finish; // -- can set DIS there as there'll be no F_we in EBL case
-    end  
+    end
     S_RE:begin
       CE_n <= 0;
       RE_n <= 0;
@@ -297,7 +297,7 @@ end else begin//            -- default values
         NxST <= S_Start;
       else
         NxST <= Init;
-    end 
+    end
     S_WE:begin
       CE_n <=0;
       WE_n <=0;
@@ -324,10 +324,10 @@ end else begin//            -- default values
         NxST <= WaitW2;
       else
         NxST <= FinishW;
-    end 
+    end
     WaitW2:begin
       CE_n <= 0;
-      DOS <= 1;    
+      DOS <= 1;
       cnt_en <= 1;
       NxST <= S_WE;
     end
@@ -339,7 +339,7 @@ end else begin//            -- default values
         NxST <= S_Start;
       else
         NxST <= Init;
-    end 
+    end
     default:
        NxST <= Init;
   endcase
@@ -347,4 +347,3 @@ end else begin//            -- default values
 
 
 endmodule
-
