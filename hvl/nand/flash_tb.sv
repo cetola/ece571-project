@@ -1,4 +1,5 @@
 // Module: flash_tb.sv
+// Based on nfcm_tb.v from Lattice Semiconductor
 // Authors:
 // Stephano Cetola <cetola@pdx.edu>
 //
@@ -29,7 +30,7 @@ module flash_tb();
  wire nfc_done;//  -- operation finished if '1'
 
 
-logic [7:0] memory[0:2047];
+logic [0:2047][7:0] memory;
 
 logic [7:0] temp;
 
@@ -88,18 +89,25 @@ initial begin
 always
    #(period/2) clk <= ~clk;
 
+// Instantiation of the nand flash interface
+flash_interface nand_flash(
+   .DIO(DIO),
+   .CLE(CLE),// -- CLE
+   .ALE(ALE),//  -- ALE
+   .WE_n(WE_n),// -- ~WE
+   .RE_n(RE_n), //-- ~RE
+   .CE_n(CE_n), //-- ~CE
+   .R_nB(R_nB), //-- R/~B
+   .rst(rst)
+);
+
+flash_datastore ds(nand_flash);
+
 // Instantiation of the nfcm
 nfcm_top nfcm(
- .DIO(DIO),
- .CLE(CLE),
- .ALE(ALE),
- .WE_n(WE_n),
- .RE_n(RE_n),
- .CE_n(CE_n),
- .R_nB(R_nB),
+ .fi(nand_flash),
 
  .CLK(clk),
- .RES(rst),
 
  .BF_sel(BF_sel),
  .BF_ad (BF_ad ),
@@ -116,20 +124,6 @@ nfcm_top nfcm(
  .nfc_strt(nfc_strt),
  .nfc_done(nfc_done)
 );
-
-// Instantiation of the nand flash interface
-flash_interface nand_flash(
-    .DIO(DIO),
-    .CLE(CLE),// -- CLE
-    .ALE(ALE),//  -- ALE
-    .WE_n(WE_n),// -- ~WE
-    .RE_n(RE_n), //-- ~RE
-    .CE_n(CE_n), //-- ~CE
-    .R_nB(R_nB), //-- R/~B
-    .rst(rst)
-);
-
-flash_datastore ds(nand_flash);
 
 // --------------------------------------------------------------------
 // --------------------------------------------------------------------
@@ -161,7 +155,7 @@ endtask
 task erase_cycle;
     input [15:0]  address;
 begin
-//    $display($time,"  %m  \t \t  << erase flash block Address = %h >>",address);
+    $display($time,"  %m  \t \t  << erase flash block Address = %h >>",address);
     @(posedge clk) ;
     #3;
     RWA=address;
@@ -196,7 +190,7 @@ task write_cycle;
     input [15:0]  address;
     integer i;
 begin
-//    $display($time,"  %m  \t \t  << Writing flash page Address = %h >>",address);
+    $display($time,"  %m  \t \t  << Writing flash page Address = %h >>",address);
     @(posedge clk) ;
     #3;
     RWA=address;
@@ -224,6 +218,7 @@ begin
    #3;
    nfc_cmd=3'b111;
    BF_sel=1'b0;
+   $display("Wrote to addres: %h value: %p.", address, memory);
    if(PErr)
      $display($time,"  %m  \t \t  << Writing error >>");
    else
@@ -266,7 +261,7 @@ begin
        temp<=memory[i];
        BF_ad<=#3 BF_ad+1;
     end
-   $display("value: \t \t %p >> read", temp);
+   $display("Read value %p from address %h.", memory, address);
    if(RErr)
      $display($time,"  %m  \t \t  << ecc error >>");
    else

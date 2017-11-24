@@ -1,4 +1,5 @@
 // Module: flash_datastore.sv
+// Based on flash_interface.v from Lattice Semiconductor
 // Authors:
 // Stephano Cetola <cetola@pdx.edu>
 //

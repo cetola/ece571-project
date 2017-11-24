@@ -32,7 +32,7 @@ ifeq ($(MODE),puresim)
 	vlog ErrLoc.v
 	vlog H_gen.v
 	vlog MFSM.v
-	vlog nfcm_top.v
+	vlog nfcm_top.sv
 	vlog TFSM.v
 	vlog flash_tb.sv
 else
@@ -40,7 +40,7 @@ else
 	velanalyze ErrLoc.v
 	velanalyze H_gen.v
 	velanalyze MFSM.v
-	velanalyze nfcm_top.v
+	velanalyze nfcm_top.sv
 	velanalyze TFSM.v
 
 	velcomp -top nfcm_top
