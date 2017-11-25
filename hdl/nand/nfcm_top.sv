@@ -1,38 +1,32 @@
 // Based on Lattice Semiconductor nfcm_top.v
-// see that file for the origional
+// see that file for the original
 //Authors:
 //Stephano Cetola
 
 `timescale 1 ns / 1 fs
 module nfcm_top(
   fi,
-  CLK,
 //-- Host I/F (TODO: BRAM)
   BF_sel ,
   BF_ad  ,
   BF_din ,
   BF_dou ,
   BF_we  ,
-  RWA    ,
 //  ADS    ,
 //-- Status
   PErr,
   EErr,
   RErr,
 //-- control & handshake
-  nfc_cmd ,
-  nfc_strt,
-  nfc_done
+  fc
 );
 //-- Flash mem i/f (Samsung 128Mx8)
 flash_interface fi;
- input CLK ;
 //-- Host I/F
  input BF_sel;
  input [10:0] BF_ad;
  input [7:0] BF_din;
  input BF_we;
- input [15:0] RWA; //-- row addr
 // output ADS;  //-- addr strobe
  output [7:0] BF_dou;
 //-- Status
@@ -41,16 +35,7 @@ flash_interface fi;
  output reg RErr ;
 
 //-- control & handshake
- input [2:0] nfc_cmd; // -- command see below
- input nfc_strt;//  -- pos edge (pulse) to start
- output reg nfc_done;//  -- operation finished if '1'
-
-//-- NFC commands (all remaining encodings are ignored = NOP):
-//-- WPA 001=write page
-//-- RPA 010=read page
-//-- EBL 100=erase block
-//-- RET 011=reset
-//-- RID 101= read ID
+ flash_cmd_interface.slave fc;
 
 
 parameter HI= 1'b1;
@@ -119,21 +104,21 @@ assign Ecc_en = enEcc & ecc_en_tfsm;
 //           .DataInA(BF_din),
 //           .QA(QA_1),
 //           .AddressA(BF_ad),
-//           .ClockA(CLK),
+//           .ClockA(fc.clk),
 //           .ClockEnA(BF_sel),
 //           .WrA(BF_we),
 //           .ResetA(LO),
 //           .DataInB(FlashDataIn),
 //           .QB(QB_1),
 //           .AddressB(CntOut[10:0]),
-//           .ClockB(CLK),
+//           .ClockB(fc.clk),
 //           .ClockEnB(Flash_BF_sel),
 //           .WrB(Flash_BF_we),
 //           .ResetB(LO)
 // );
 
 ACounter addr_counter (
-          .clk(CLK),
+          .clk(fc.clk),
           .Res(acnt_res),
           .Set835(set835),
           .CntEn(CntEn),
@@ -153,7 +138,7 @@ TFSM tim_fsm(
           .cnt_en(CntEn),
           .TC3(tc3),
           .TC2048(tc2048),
-          .CLK(CLK),
+          .CLK(fc.clk),
           .RES(ires),
           .start(t_start),
           .cmd_code(t_cmd),
@@ -163,10 +148,10 @@ TFSM tim_fsm(
 
 MFSM main_fsm
 (
-  .CLK ( CLK ),
+  .CLK ( fc.clk ),
   .RES ( ires ),
-  .start ( nfc_strt),
-  .command(nfc_cmd),
+  .start ( fc.start),
+  .command(fc.cmd),
   .setDone(setDone),
   .R_nB (fi.R_nB),
   .BF_sel( BF_sel),
@@ -203,7 +188,7 @@ MFSM main_fsm
 );
 
 H_gen ecc_gen(
-     . clk( CLK),
+     . clk( fc.clk),
      . Res( acnt_res),
      . Din( BF_data2flash[3:0]),
      . EN (Ecc_en),
@@ -213,7 +198,7 @@ H_gen ecc_gen(
 
 ErrLoc ecc_err_loc
  (
-      .clk( CLK),
+      .clk( fc.clk),
       .Res (acnt_res),
       .F_ecc_data (FlashDataIn[6:0]),
       .WrECC (WrECC_e),
@@ -221,19 +206,19 @@ ErrLoc ecc_err_loc
       .ECC_status (SetRrErr)
 );
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   res_t <= fi.rst;
   ires <= res_t;
 end
 
-always@(posedge CLK)
+always@(posedge fc.clk)
   if (rar_we) begin
-    rad_1=RWA[7:0];
-    rad_2=RWA[15:8];
+    rad_1=fc.RWA[7:0];
+    rad_2=fc.RWA[15:8];
   end
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   FlashDataOu <= FlashDataOu_i;
   DOS <= DOS_i;
@@ -261,7 +246,7 @@ endcase
 end
 
 reg [3:0] WC_tmp;
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if ((ires ==1'b1) | (WCountRes ==1'b1))
     WC_tmp<= 4'b0000;
@@ -283,7 +268,7 @@ begin
 end
 
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if (ires)
     FlashCmd <=8'b00000000;
@@ -291,45 +276,45 @@ begin
     FlashCmd <= cmd_reg;
 end
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if (ires)
-    nfc_done <= 1'b0;
+    fc.done <= 1'b0;
   else if (setDone)
-    nfc_done <=1'b1;
-  else if (nfc_strt)
-    nfc_done <=1'b0;
+    fc.done <=1'b1;
+  else if (fc.start)
+    fc.done <=1'b0;
 
 end
 
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if (ires)
     PErr <=1'b0;
   else if (SetPrErr)
     PErr <= 1'b1;
-  else if (nfc_strt)
+  else if (fc.start)
     PErr <= 1'b0;
 end
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if (ires)
     EErr <=1'b0;
   else if (SetErErr)
     EErr <=1'b1;
-  else if (nfc_strt)
+  else if (fc.start)
     EErr <= 1'b0;
 end
 
-always@(posedge CLK)
+always@(posedge fc.clk)
 begin
   if (ires)
     RErr <=1'b0;
   else if (SetRrErr)
     RErr <= 1'b1;
-  else if (nfc_strt)
+  else if (fc.start)
     RErr <= 1'b0;
 end
 
