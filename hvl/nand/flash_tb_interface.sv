@@ -148,7 +148,7 @@ task read_cycle;
     buff.BF_ad <= #3 buff.BF_ad + 1;
   end
   $display("Read value %p from address %h.", memory, address);
-
+  kill_time();
   //TODO: assert, throw error
   // if(RErr)
   // $display($time,"  %m  \t \t  << ecc error >>");
@@ -158,28 +158,31 @@ task read_cycle;
 end
 endtask : read_cycle
 
+// --------------------------------------------------------------------
+//    READ ID
+// --------------------------------------------------------------------
 
-// task read_id_cycle;
-//     input [15:0]  address;
-//
-// begin
-//     @(posedge clk) ;
-//     #3;
-//     RWA=address;
-//     nfc_cmd=3'b101;
-//     nfc_strt=1'b1;
-//     BF_sel=1'b1;
-//     @(posedge clk) ;
-//     #3;
-//     nfc_strt=1'b0;
-//     @(posedge clk) ;
-//    wait(nfc_done);
-//    @(posedge clk) ;
-//    nfc_cmd=3'b111;
-//       $display($time,"  %m  \t \t  << read id function over >>");
-//
-// end
-// endtask
+task read_id_cycle;
+  input [15:0]  address;
+
+  begin
+  @(posedge fc.clk) ;
+  #3;
+  fc.RWA = address;
+  fc.cmd = 3'b101;
+  fc.start = 1'b1;
+  buff.BF_sel = 1'b1;
+  @(posedge fc.clk) ;
+  #3;
+  fc.start = 1'b0;
+  @(posedge fc.clk) ;
+  wait(fc.done);
+  @(posedge fc.clk) ;
+  fc.cmd = 3'b111;
+  $display($time,"  %m  \t \t  << read id function over >>");
+  kill_time();
+  end
+endtask : read_id_cycle
 
 task kill_time;
   begin

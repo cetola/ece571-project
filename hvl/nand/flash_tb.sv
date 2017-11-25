@@ -67,7 +67,7 @@ initial begin
   tbi.erase_cycle(16'h1234);
   tbi.write_cycle(16'h1234);
   tbi.read_cycle(16'h1234);
-  //read_id_cycle(16'h0000);
+  tbi.read_id_cycle(16'h0000);
 
   #1000;
   $stop;
