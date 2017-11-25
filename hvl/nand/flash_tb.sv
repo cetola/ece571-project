@@ -6,7 +6,7 @@
 // Description:
 // NAND flash test bench
 
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 module flash_tb();
 
@@ -23,7 +23,8 @@ parameter period=16;         // suppose 60MHz
 
 //-------------------------------Interfaces
 flash_cmd_interface fc(
-  .clk(clk)
+  .clk(clk),
+  .rst(rst)
   );
 
 buffer_interface buff();
@@ -56,9 +57,13 @@ nfcm_top nfcm(
  .fc(fc.slave)
 );
 
+// TBX clkgen
 initial begin
-  $display("fingers crossed");
-  clk <= 1'b0;
+  clk = 1'b0;
+  forever #(period/2) clk = !clk;
+end
+
+initial begin
   rst  <= 1'b1;
   #300;
   rst<=1'b0;
@@ -72,8 +77,5 @@ initial begin
   #1000;
   $stop;
 end
-
-always
-   #(period/2) clk <= ~clk;
 
 endmodule

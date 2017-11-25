@@ -25,8 +25,7 @@ ifeq ($(MODULES),all)
 	vlog top_hvl.sv
 else ifeq ($(MODULES),nand)
 	#NAND Flash
-	vlog flash_interface.sv
-	vlog flash_datastore.sv
+	vlog top_nand_hvl.sv
 ifeq ($(MODE),puresim)
 	vlog ACounter.v
 	vlog ErrLoc.v
@@ -34,10 +33,15 @@ ifeq ($(MODE),puresim)
 	vlog MFSM.v
 	vlog nfcm_top.sv
 	vlog TFSM.v
+	vlog flash_interface.sv
+	vlog flash_datastore.sv
 	vlog flash_cmd_interface.sv
 	vlog flash_tb_interface.sv
 	vlog buffer_interface.sv
-	vlog flash_tb.sv
+
+	vlog top_nand_hdl.sv
+
+	#velhvl -sim $(MODE)
 else
 	velanalyze ACounter.v
 	velanalyze ErrLoc.v
@@ -59,7 +63,7 @@ run:
 
 run-nand:
 
-	vsim -c -do nand.do flash_tb
+	vsim -c -do nand.do top_nand_hvl top_nand_hdl
 
 clean:
 	rm -rf modelsim.ini work work.puresim work.veloce transcript veloce.log veloce.map veloce.med velrunopts.ini tbxbindings.h

@@ -7,11 +7,22 @@
 // interactions between HVL and HDL code
 // HVL runs on co-model server while HDL runs on veloce
 
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 interface flash_tb_interface(flash_cmd_interface.master fc, buffer_interface.writer buff);
 
 logic [0:2047][7:0] memory;
+
+task reset_wait(); //pragma tbx xtf
+  @(posedge fc.clk);
+  while(fc.rst == 1'b1) begin
+  @(posedge fc.clk);
+  end
+  while(fc.rst == 1'b0) begin
+  @(posedge fc.clk);
+  end
+  @(posedge fc.clk);
+endtask : reset_wait
 
 // --------------------------------------------------------------------
 //  RESET
