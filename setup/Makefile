@@ -36,6 +36,7 @@ ifeq ($(MODE),puresim)
 	vlog TFSM.v
 	vlog flash_cmd_interface.sv
 	vlog flash_tb_interface.sv
+	vlog buffer_interface.sv
 	vlog flash_tb.sv
 else
 	velanalyze ACounter.v

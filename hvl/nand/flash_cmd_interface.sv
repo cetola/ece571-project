@@ -29,11 +29,11 @@ modport master (
   output RWA
   );
 
-  modport slave (
-    input clk,
-    input cmd,
-    input start,
-    output done,
-    input RWA
-    );
+modport slave (
+  input clk,
+  input cmd,
+  input start,
+  output done,
+  input RWA
+  );
 endinterface

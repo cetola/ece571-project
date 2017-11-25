@@ -6,37 +6,21 @@
 `timescale 1 ns / 1 fs
 module nfcm_top(
   fi,
-//-- Host I/F (TODO: BRAM)
-  BF_sel ,
-  BF_ad  ,
-  BF_din ,
-  BF_dou ,
-  BF_we  ,
-//  ADS    ,
-//-- Status
+  buff,
   PErr,
   EErr,
   RErr,
-//-- control & handshake
   fc
 );
-//-- Flash mem i/f (Samsung 128Mx8)
+
 flash_interface fi;
-//-- Host I/F
- input BF_sel;
- input [10:0] BF_ad;
- input [7:0] BF_din;
- input BF_we;
-// output ADS;  //-- addr strobe
- output [7:0] BF_dou;
+buffer_interface.reader buff;
+flash_cmd_interface.slave fc;
+
 //-- Status
  output reg PErr ; // -- progr err
  output reg EErr ; // -- erase err
  output reg RErr ;
-
-//-- control & handshake
- flash_cmd_interface.slave fc;
-
 
 parameter HI= 1'b1;
 parameter LO= 1'b0;
@@ -88,7 +72,7 @@ wire DOS_i;
 reg [7:0] FlashDataOu_i ;
 
 
-assign BF_dou =  QA_1;
+assign buff.BF_dou =  QA_1;
 assign BF_data2flash = QB_1;
 assign cad_1 = CntOut[7:0];
 assign cad_2 = {4'b0000,CntOut[11:8]};
@@ -100,6 +84,7 @@ assign Flash_BF_we = DIS & F_we;
 assign Ecc_en = enEcc & ecc_en_tfsm;
 
 //TODO: BRAM buffer
+// use a buffer_interface.writer
 // ebr_buffer buff(
 //           .DataInA(BF_din),
 //           .QA(QA_1),
@@ -154,7 +139,7 @@ MFSM main_fsm
   .command(fc.cmd),
   .setDone(setDone),
   .R_nB (fi.R_nB),
-  .BF_sel( BF_sel),
+  .BF_sel( buff.BF_sel),
 //  .TBF ( TBF_i),
 //  .RBF ( RBF_i),
 //  .ResTBF ( Wr_done),
