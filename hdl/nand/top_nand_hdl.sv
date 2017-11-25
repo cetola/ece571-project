@@ -28,11 +28,9 @@ parameter period=16;         // 60MHz
 /* MODULES */
 /************************************************************************/
 
-flash_cmd_interface fc(.clk(clk), .rst(rst));
+flash_cmd_interface fc(.clk(clk));
 
 buffer_interface buff();
-
-flash_tb_interface tbi(fc.master, buff.writer);
 
 flash_interface nand_flash(
   .DIO(DIO),
@@ -44,6 +42,8 @@ flash_interface nand_flash(
   .R_nB(R_nB),
   .rst(rst)
 );
+
+flash_tb_interface tbi(fc.master, buff.writer, nand_flash);
 
 flash_datastore ds(nand_flash);
 
@@ -61,13 +61,13 @@ nfcm_top nfcm(
 initial begin
   $display("top_nand_hdl clk start");
   clk = 1'b0;
-  forever #(period/2) clk = !clk;
+  forever #(period/2) clk = ~clk;
 end
 
 initial begin
   $display("top_nand_hvl reset start");
   rst  <= 1'b1;
-  #300;
+  #3;
   rst<=1'b0;
 end
 

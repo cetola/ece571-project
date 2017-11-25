@@ -6,8 +6,7 @@
 // NAND flash command interface
 
 interface flash_cmd_interface(
-  input logic clk,
-  input logic rst
+  input logic clk
 );
 
 logic [2:0] cmd = 3'b111;  // -- command, see below
@@ -24,7 +23,6 @@ logic [15:0] RWA = 16'b0;  //-- row addr
 
 modport master (
   input clk,
-  input rst,
   output cmd,
   output start,
   input done,

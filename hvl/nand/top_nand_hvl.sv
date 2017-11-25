@@ -19,11 +19,11 @@ int errs = 0;
   $fwrite(log,"NAND Begin:\n\n");
 
   top_nand_hdl.tbi.reset_wait();
-  // top_nand_hdl.tbi.reset_cycle();
-  // top_nand_hdl.tbi.erase_cycle(16'h1234);
-  // top_nand_hdl.tbi.write_cycle(16'h1234);
-  // top_nand_hdl.tbi.read_cycle(16'h1234);
-  // top_nand_hdl.tbi.read_id_cycle(16'h0000);
+  top_nand_hdl.tbi.reset_cycle();
+  top_nand_hdl.tbi.erase_cycle(16'h1234);
+  top_nand_hdl.tbi.write_cycle(16'h1234);
+  top_nand_hdl.tbi.read_cycle(16'h1234);
+  top_nand_hdl.tbi.read_id_cycle(16'h0000);
 
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);
