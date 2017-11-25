@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>>>>>>>>>> COPYRIGHT NOTICE <<<<<<<<<<<<<<<<<<<<<<<<<
 //-------------------------------------------------------------------------
-//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation      
-// 
+//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation
+//
 //-------------------------------------------------------------------------
 // Permission:
 //
@@ -31,7 +31,7 @@
 //
 //    web: http://www.latticesemi.com/
 //    email: techsupport@latticesemi.com
-// 
+//
 //-------------------------------------------------------------------------
 //
 // Revision History :
@@ -41,12 +41,12 @@
 //   v01.1:| J.T    :| 06/21/09  :| juse (7,4) hamming code
 // --------------------------------------------------------------------
 //
-// 
+//
 //Description of module:
 //--------------------------------------------------------------------------------
 // (7,4) hamming code
 // --------------------------------------------------------------------
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 module H_gen(
       clk ,
@@ -62,13 +62,13 @@ module H_gen(
  input [3:0]    Din ;
  input     EN ; // -- enable ECC
 
- output reg [7:0]   eccByte; 
+ output reg [7:0]   eccByte;
 
 wire rp1,rp2,rp3;
 wire [7:0] ecc;
 assign rp1= ((Din[3] ^ Din[2] ^ Din[0])==1'b1)?1:0;
 assign rp2= ((Din[3] ^ Din[1] ^ Din[0])==1'b1)?1:0;
-assign rp3= ((Din[2] ^ Din[1] ^ Din[0])==1'b1)?1:0;                           
+assign rp3= ((Din[2] ^ Din[1] ^ Din[0])==1'b1)?1:0;
 
 assign ecc[7]=1'b0;
 assign ecc[6]=rp1;
@@ -80,7 +80,7 @@ assign ecc[1]=Din[1];
 assign ecc[0]=Din[0];
 
 
-always@(posedge clk)       
+always@(posedge clk)
   if (Res) begin
       eccByte<=8'h00;
   end else if (EN) begin

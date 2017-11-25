@@ -46,7 +46,7 @@
 //--------------------------------------------------------------------------------
 // Timing FSM creating all the necessary control signals for the nand-flash memory.
 // --------------------------------------------------------------------
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 module TFSM(
   CLE ,

@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>>>>>>>>>> COPYRIGHT NOTICE <<<<<<<<<<<<<<<<<<<<<<<<<
 //-------------------------------------------------------------------------
-//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation      
-// 
+//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation
+//
 //-------------------------------------------------------------------------
 // Permission:
 //
@@ -31,7 +31,7 @@
 //
 //    web: http://www.latticesemi.com/
 //    email: techsupport@latticesemi.com
-// 
+//
 //-------------------------------------------------------------------------
 //
 // Revision History :
@@ -41,12 +41,12 @@
 //   v01.1:| J.T    :| 06/21/09  :| just use one buffer
 // --------------------------------------------------------------------
 //
-// 
+//
 //Description of module:
 //--------------------------------------------------------------------------------
-// 
+//
 // --------------------------------------------------------------------
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 module ACounter(
       clk,
@@ -64,28 +64,28 @@ module ACounter(
    output [11:0]  CntOut;
    output  reg TC2048;
    output  reg TC3;
-   
+
 reg [11:0] cnt_state;
 
 always@(posedge clk)
   if (Res)
     cnt_state <= 0;
   else if (Set835)
-    cnt_state <=12'h835;   
+    cnt_state <=12'h835;
   else if (CntEn)
     cnt_state <= cnt_state + 1;
 
 
 always@(cnt_state)
    if (cnt_state== 12'h7FF) begin
-      TC2048 <= 1; 
+      TC2048 <= 1;
       TC3 <=0;
    end else if (cnt_state[7:0] == 8'h40) begin
-     TC3 <= 1; 
+     TC3 <= 1;
      TC2048 <= 0;
    end
-  // --elsif (cnt_state(3 downto 0) = x"7") or 
-  // --      (cnt_state(3 downto 0) = x"A") or 
+  // --elsif (cnt_state(3 downto 0) = x"7") or
+  // --      (cnt_state(3 downto 0) = x"A") or
   // --      (cnt_state(3 downto 0) = x"D") then
   // --  TC3 <= '1'; TC2048 <= '0';
    else begin
@@ -93,7 +93,7 @@ always@(cnt_state)
      TC2048 <= 0;
    end
 
-   
+
 assign CntOut = cnt_state;
 
 endmodule

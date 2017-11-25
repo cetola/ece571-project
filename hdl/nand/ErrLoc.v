@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>>>>>>>>>> COPYRIGHT NOTICE <<<<<<<<<<<<<<<<<<<<<<<<<
 //-------------------------------------------------------------------------
-//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation      
-// 
+//  Copyright (c) 2006-2010 by Lattice Semiconductor Corporation
+//
 //-------------------------------------------------------------------------
 // Permission:
 //
@@ -31,7 +31,7 @@
 //
 //    web: http://www.latticesemi.com/
 //    email: techsupport@latticesemi.com
-// 
+//
 //-------------------------------------------------------------------------
 //
 // Revision History :
@@ -41,12 +41,12 @@
 //   v01.1:| J.T    :| 06/21/09  :| juse (7,4) hamming code
 // --------------------------------------------------------------------
 //
-// 
+//
 //Description of module:
 //--------------------------------------------------------------------------------
 // (7,4) hamming code detect
 // --------------------------------------------------------------------
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 
 module ErrLoc(
       clk,
@@ -61,7 +61,7 @@ module ErrLoc(
   input    Res;
   input  [6:0]  F_ecc_data ; //-- ecc byte read fm flash
   input    WrECC ;
-  
+
   output reg ECC_status;
 
 wire check1,check2,check3;
@@ -72,7 +72,7 @@ always@(posedge clk)
   din <= 8'h00;
  else if (WrECC)
   din <= F_ecc_data;
-  
+
 assign check1=din[6]^din[4]^din[2]^din[0];
 assign check2=din[5]^din[4]^din[1]^din[0];
 assign check3=din[3]^din[2]^din[1]^din[0];

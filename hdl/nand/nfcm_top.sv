@@ -3,7 +3,7 @@
 //Authors:
 //Stephano Cetola
 
-`timescale 1 ns / 1 fs
+`timescale 1 ns / 1 ps
 module nfcm_top(
   fi,
   buff,
