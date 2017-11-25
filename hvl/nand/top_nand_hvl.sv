@@ -20,8 +20,11 @@ int errs = 0;
   top_nand_hdl.tbi.reset_wait();
   top_nand_hdl.tbi.reset_cycle();
   top_nand_hdl.tbi.erase_cycle(16'h1234);
+  assert (!top_nand_hdl.EErr) else $error("%m Erase error");
   top_nand_hdl.tbi.write_cycle(16'h1234);
+  assert (!top_nand_hdl.PErr) else $error("%m Write error");
   top_nand_hdl.tbi.read_cycle(16'h1234);
+  assert (!top_nand_hdl.RErr) else $error("%m ECC error");
   top_nand_hdl.tbi.read_id_cycle(16'h0000);
 
 

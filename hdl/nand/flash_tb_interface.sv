@@ -61,11 +61,6 @@ begin
 
    $display("erase done");
    kill_time();
-   //TODO: check for errors in the tb
-   // if(EErr)
-   //   $display($time,"  %m  \t \t  << erase error >>");
-   // else
-   //   $display($time,"  %m  \t \t  << erase no error >>");
 
 end
 endtask : erase_cycle
@@ -107,19 +102,13 @@ begin
    #3;
    fc.cmd = 3'b111;
    buff.BF_sel = 1'b0;
-   $display("Wrote to addres: %h value: %p.", address, memory);
+   $display("Wrote to addres: %h", address);
    kill_time();
-   //TODO: check for errors
-   // if(PErr)
-   //   $display($time,"  %m  \t \t  << Writing error >>");
-   // else
-   //   $display($time,"  %m  \t \t  << Writing no error >>");
-
 end
 endtask : write_cycle
 
 // --------------------------------------------------------------------
-//    WRITE
+//    READ
 // --------------------------------------------------------------------
 
 task read_cycle; //pragma tbx xtf
@@ -151,14 +140,8 @@ task read_cycle; //pragma tbx xtf
     temp <= memory[i];
     buff.BF_ad <= #3 buff.BF_ad + 1;
   end
-  $display("Read value %p from address %h.", memory, address);
+  $display("Read from address %h.", address);
   kill_time();
-  //TODO: assert, throw error
-  // if(RErr)
-  // $display($time,"  %m  \t \t  << ecc error >>");
-  // else
-  // $display($time,"  %m  \t \t  << ecc no error >>");
-
 end
 endtask : read_cycle
 
