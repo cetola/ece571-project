@@ -19,8 +19,6 @@ module flash_tb();
  wire EErr ; // -- erase err
  wire RErr ;
 
-logic [7:0] temp;
-//TODO: BRAM
 parameter period=16;         // suppose 60MHz
 
 //-------------------------------Interfaces
@@ -62,15 +60,13 @@ initial begin
   $display("fingers crossed");
   clk <= 1'b0;
   rst  <= 1'b1;
-
-  temp<=8'h24;
   #300;
   rst<=1'b0;
 
   tbi.reset_cycle();
   tbi.erase_cycle(16'h1234);
   tbi.write_cycle(16'h1234);
-  //read_cycle(16'h1234);
+  tbi.read_cycle(16'h1234);
   //read_id_cycle(16'h0000);
 
   #1000;
