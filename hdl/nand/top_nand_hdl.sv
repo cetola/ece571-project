@@ -11,7 +11,7 @@
 
 `timescale 1 ns / 1 ps
 
-module top_nand_hdl();
+module top_nand_hdl(); //pragma attribute top_hdl parition_module_xrtl
 
  logic clk,rst;
 
@@ -47,7 +47,6 @@ flash_tb_interface tbi(fc.master, buff.writer, nand_flash);
 
 flash_datastore ds(nand_flash);
 
-
 nfcm_top nfcm(
   .fi(nand_flash),
   .buff(buff.reader),
@@ -59,13 +58,11 @@ nfcm_top nfcm(
 
 // TBX clkgen
 initial begin
-  $display("top_nand_hdl clk start");
   clk = 1'b0;
   forever #(period/2) clk = ~clk;
 end
 
 initial begin
-  $display("top_nand_hvl reset start");
   rst  <= 1'b1;
   #3;
   rst<=1'b0;

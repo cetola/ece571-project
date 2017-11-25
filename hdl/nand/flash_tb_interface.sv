@@ -20,7 +20,7 @@ endtask : reset_wait
 // --------------------------------------------------------------------
 //  RESET
 // --------------------------------------------------------------------
-task reset_cycle;
+task reset_cycle; //pragma tbx xtf
 begin
     kill_time();
     $display("reset start");
@@ -40,7 +40,7 @@ endtask
 // --------------------------------------------------------------------
 // ERASE
 // --------------------------------------------------------------------
-task erase_cycle;
+task erase_cycle; //pragma tbx xtf
     input [15:0]  address;
 begin
     $display($time,"  %m  \t \t  << erase flash block Address = %h >>",address);
@@ -74,7 +74,7 @@ endtask : erase_cycle
 //    WRITE
 // --------------------------------------------------------------------
 
-task write_cycle;
+task write_cycle; //pragma tbx xtf
     input [15:0]  address;
     integer i;
 
@@ -122,7 +122,7 @@ endtask : write_cycle
 //    WRITE
 // --------------------------------------------------------------------
 
-task read_cycle;
+task read_cycle; //pragma tbx xtf
   input [15:0]  address;
   integer i;
   logic [7:0] temp;
@@ -166,7 +166,7 @@ endtask : read_cycle
 //    READ ID
 // --------------------------------------------------------------------
 
-task read_id_cycle;
+task read_id_cycle; //pragma tbx xtf
   input [15:0]  address;
 
   begin

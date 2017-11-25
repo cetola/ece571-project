@@ -13,8 +13,7 @@ integer log = 1;
 int errs = 0;
 
   initial begin
-  $display("top_nand_hvl start");
-  //assert ((log = $fopen("nand.log")) != 0) else $error("%m can't open file nand.log.");
+  assert ((log = $fopen("nand.log")) != 0) else $error("%m can't open file nand.log.");
 
   $fwrite(log,"NAND Begin:\n\n");
 
