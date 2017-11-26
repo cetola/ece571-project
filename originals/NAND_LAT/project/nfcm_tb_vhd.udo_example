@@ -1,0 +1,8 @@
+-- ispLEVER VHDL Timing Simulation Template: nfcm_tb_vhd.udo.
+-- You may edit this file to control your simulation.
+-- You may specify your design unit.
+-- You may specify your waveforms.
+vsim nfcm_tb -noglitch -PL pmi_work -sdfmax nfcm=test_xo.sdf +no_tchk_msg
+add wave *
+-- You may specify your simulation run time.
+run 1000 ns

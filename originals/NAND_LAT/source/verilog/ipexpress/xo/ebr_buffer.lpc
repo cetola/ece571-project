@@ -1,0 +1,57 @@
+[Device]
+Family=machxo
+PartType=LCMXO2280C
+PartName=LCMXO2280C-3T100C
+SpeedGrade=-3
+Package=TQFP100
+OperatingCondition=COM
+Status=P
+
+[IP]
+VendorName=Lattice Semiconductor Corporation
+CoreType=LPM
+CoreStatus=Demo
+CoreName=RAM_DP_TRUE
+CoreRevision=7.0
+ModuleName=ebr_buffer
+SourceFormat=Verilog HDL
+ParameterFileVersion=1.0
+Date=05/08/2009
+Time=11:37:56
+
+[Parameters]
+Verilog=1
+VHDL=0
+EDIF=1
+Destination=Synplicity
+Expression=BusA(0 to 7)
+Order=Big Endian [MSB:LSB]
+IO=0
+AAddress=2048
+BAddress=2048
+AData=8
+BData=8
+enByte=0
+ByteSize=9
+AadPipeline=0
+BadPipeline=0
+AinPipeline=0
+BinPipeline=0
+AoutPipeline=1
+BoutPipeline=1
+AMOR=0
+BMOR=0
+AInData=Registered
+BInData=Registered
+AAdControl=Registered
+BAdControl=Registered
+MemFile=
+MemFormat=bin
+Reset=Async
+GSR=Enabled
+WriteA=Normal
+WriteB=Normal
+Pad=0
+EnECC=0
+Optimization=Speed
+Pipeline=0

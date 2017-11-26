@@ -8,6 +8,7 @@ SD Card Emulation with with NAND storage.
 setup - veloce config, makefile, and simulation scripts  
 hdl - synthesizable design files  
 hvl - testbench files  
+origionals - unmodified files used for reference
 
 ### Setup Instructions
 

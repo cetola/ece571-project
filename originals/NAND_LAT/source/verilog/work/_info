@@ -1,0 +1,51 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/PSU_FPGA/Nand/source/verilog
+vACounter
+!s110 1510953396
+!i10b 1
+!s100 l@AB3iJLKBVP?I8XmRJaA3
+IGYcoeHIHo:<XW]ac11KOS0
+Z1 VDg1SIo80bB@j0V0VzS_@n1
+R0
+Z2 w1510677902
+8ACounter.v
+FACounter.v
+L0 51
+Z3 OV;L;10.5b;63
+r1
+!s85 0
+31
+!s108 1510953396.000000
+!s107 ACounter.v|
+!s90 ACounter.v|
+!i113 1
+Z4 tCvgOpt 0
+n@a@counter
+vnfcm_top
+!s110 1510953445
+!i10b 1
+!s100 j7A1<HWZSHM]>a[@4X05_0
+Ii[jjX`7oLkc<26nb02XcF3
+R1
+R0
+R2
+8nfcm_top.v
+Fnfcm_top.v
+L0 57
+R3
+r1
+!s85 0
+31
+!s108 1510953445.000000
+!s107 nfcm_top.v|
+!s90 nfcm_top.v|
+!i113 1
+R4

@@ -1,0 +1,53 @@
+[Device]
+Family=machxo2
+PartType=LCMXO2-1200HC
+PartName=LCMXO2-1200HC-4TG100CES
+SpeedGrade=-4
+Package=TQFP100
+OperatingCondition=COM
+Status=C
+
+[IP]
+VendorName=Lattice Semiconductor Corporation
+CoreType=LPM
+CoreStatus=Demo
+CoreName=RAM_DP_TRUE
+CoreRevision=7.1
+ModuleName=ebr_buffer
+SourceFormat=Verilog HDL
+ParameterFileVersion=1.0
+Date=10/12/2010
+Time=16:36:21
+
+[Parameters]
+Verilog=1
+VHDL=0
+EDIF=1
+Destination=Synplicity
+Expression=BusA(0 to 7)
+Order=Big Endian [MSB:LSB]
+IO=0
+RAddress=2048
+RData=8
+WAddress=2048
+WData=8
+ROutputEn=1
+RClockEn=0
+WOutputEn=1
+WClockEn=0
+enByte=0
+ByteSize=9
+Optimization=Speed
+Reset=Async
+Reset1=Sync
+Init=0
+MemFile=
+MemFormat=bin
+EnECC=0
+Pipeline=0
+WriteA=Normal
+WriteB=Normal
+init_data=0
+
+[FilesGenerated]
+=mem
