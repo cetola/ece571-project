@@ -41,8 +41,16 @@ ifeq ($(MODE),puresim)
 
 	vlog top_nand_hdl.sv
 
-	#velhvl -sim $(MODE)
+	velhvl -sim $(MODE)
 else
+	velanalyze -extract_hvl_info +define+QUESTA top_nand_hvl.sv
+
+	velanalyze flash_interface.sv
+	velanalyze flash_datastore.sv
+	velanalyze flash_cmd_interface.sv
+	velanalyze flash_tb_interface.sv
+	velanalyze buffer_interface.sv
+
 	velanalyze ACounter.v
 	velanalyze ErrLoc.v
 	velanalyze H_gen.v
@@ -50,7 +58,9 @@ else
 	velanalyze nfcm_top.sv
 	velanalyze TFSM.v
 
-	velcomp -top nfcm_top
+	velanalyze top_nand_hdl.sv
+
+	velcomp  -top top_nand_hdl
 
 	velhvl -sim $(MODE)
 endif

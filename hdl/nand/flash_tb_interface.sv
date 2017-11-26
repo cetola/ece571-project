@@ -9,7 +9,7 @@
 
 `timescale 1 ns / 1 ps
 
-interface flash_tb_interface(flash_cmd_interface.master fc, buffer_interface.writer buff, flash_interface fi);
+interface flash_tb_interface(flash_cmd_interface.master fc, buffer_interface.writer buff, flash_interface fi); // pragma attribute flash_tb_interface partition_interface_xif
 
 logic [0:2047][7:0] memory;
 
