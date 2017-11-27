@@ -56,3 +56,10 @@ nand-con/
 sd-con/
 spi-con/
 top-sim/
+
+# ModelSim
+_lib*.*
+_info
+_vmake
+*.log
+
