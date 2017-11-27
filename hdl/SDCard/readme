@@ -1,0 +1,4 @@
+Open the project in QuestaSim and simulate the "sd_controller_top_tb" module and run.
+
+I am working to change only "sdModel.sv" and "sd_controller_top.sv" as we want to vaidate that the behavior of the SD Card 
+remains the same as I modify it
