@@ -2,3 +2,9 @@ Open the project in QuestaSim and simulate the "sd_controller_top_tb" module and
 
 I am working to change only "sdModel.sv" and "sd_controller_top.sv" as we want to vaidate that the behavior of the SD Card 
 remains the same as I modify it
+
+All modules in this folder originated from https://opencores.org/project,sdcard_mass_storage_controller
+
+sdModel.sv and sd_controller_top_tb.sv were modified to take advantage of SystemVerilog constructs
+
+Interfaces.sv was created by Alec Wiese using code from project partners
