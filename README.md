@@ -2,7 +2,7 @@
 Agashe - Cetola - Wiese
 ECE 571 Final Project
 
-SD Card Emulation with with NAND storage.
+SD Card Emulation with NAND storage.
 
 ### Directories  
 setup - veloce config, makefile, and simulation scripts  
