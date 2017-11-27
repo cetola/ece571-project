@@ -1,10 +1,10 @@
 `define BIG_ENDIAN
 `define TIME_OUT_TIME 255
 
-//OBS komihåg Master SEL to 1111 vid port dek
+//OBS komihÃ¥g Master SEL to 1111 vid port dek
 
-//`define SIM
-`define SYN
+`define SIM
+//`define SYN
 
 `define ACTEL
 
@@ -43,11 +43,3 @@
 `define BIT_CRC_CYCLE 16
 
 //FIFO defines---------------
-
-
-
-
-
-
-
-
