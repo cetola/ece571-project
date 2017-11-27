@@ -18,12 +18,13 @@
 `define DATAS 5
 `define TRAN 4
 
-sdPins sdPin();
+// sdPin();
 	
 
-module sdModel(sdPin);
+module sdModel(sdPins sdPin);	//use the SD interface instead of individual port names
+//old port names for reference:
 /*(
-  input sdClk,
+  input sdPin.sdClk,
   tri cmd,
   tri [3:0] dat
 );*/
@@ -42,8 +43,8 @@ reg cardIdentificationState;
 reg CardTransferActive;
 reg [2:0] BusWidth;
 
-assign sdPin.cmd = oeCmd ? cmdOut : 1'bz;
-assign sdPin.dat = oeDat ? datOut : 4'bz;
+assign sdPin.cmd = oeCmd ? cmdOut : 1'bz;	//tristate our command lines
+assign sdPin.dat = oeDat ? datOut : 4'bz;	//tristate our data lines
 
 reg InbuffStatus;
 reg [31:0] BlockAddr;
@@ -124,13 +125,13 @@ wire [15:0] crcDat_out [3:0];
 genvar i;
 generate
 for(i=0; i<4; i=i+1) begin:CRC_16_gen
-  sd_crc_16 CRC_16_i (crcDat_in[i],crcDat_en, sdClk, crcDat_rst, crcDat_out[i]);
+  sd_crc_16 CRC_16_i (crcDat_in[i],crcDat_en, sdPin.sdClk, crcDat_rst, crcDat_out[i]);
 end
 endgenerate  
 sd_crc_7 crc_7( 
 crcIn,
 crcEn,
-sdClk,
+sdPin.sdClk,
 crcRst,
 crcOut);
 
@@ -154,7 +155,7 @@ reg [2:0] crcCnt;
 reg add_wrong_cmd_crc;
 reg add_wrong_cmd_indx;
 reg add_wrong_data_crc;
-
+/*
 initial begin 
   add_wrong_data_crc<=0;
   add_wrong_cmd_indx<=0;
@@ -207,11 +208,11 @@ initial begin
   flash_write_cnt<=0;
   startUppCnt<=0;
   flash_blockwrite_cnt<=0;
-end
+end*/
 
 //CARD logic
 
-always @ (state or sdPin.cmd or cmdRead or ValidCmd or inValidCmd or cmdWrite or outDelayCnt)
+always_comb// @ (state or sdPin.cmd or cmdRead or ValidCmd or inValidCmd or cmdWrite or outDelayCnt)
 begin : FSM_COMBO
  next_state  = 0;   
 case(state)  
@@ -247,7 +248,7 @@ READ_CMD: begin
  endcase
 end
 
-always @ (dataState or CardStatus or crc_c or flash_write_cnt or sdPin.dat[0] )
+always_comb// @ (dataState or CardStatus or crc_c or flash_write_cnt or sdPin.dat[0] )
 begin : FSM_COMBODAT
  next_datastate  = 0;   
 case(dataState)  
@@ -306,25 +307,30 @@ end
  endcase
 end
 
-always @ (posedge sdClk  )
+
+integer outdly_cnt;//--
+reg data_send_index;//--
+integer write_out_index;//--
+
+always_ff @ (posedge sdPin.sdClk  )
  begin 
   
     q_start_bit <= sdPin.dat[0];
  end
 
-always @ (posedge sdClk  )
-begin : FSM_SEQ
+//always_ff @ (posedge sdPin.sdClk  )
+//begin : FSM_SEQ
     state <= next_state; 
-end
+//end
 
-always @ (posedge sdClk  )
-begin : FSM_SEQDAT
+//always_ff @ (posedge sdPin.sdClk  )
+//begin : FSM_SEQDAT
     dataState <= next_datastate; 
-end
+//end
 
 
 
-always @ (posedge sdClk) begin
+//always_ff @ (posedge sdPin.sdClk) begin
 if (CardTransferActive) begin
  if (InbuffStatus==0) //empty
    CardStatus[8]<=1;
@@ -338,15 +344,15 @@ else
  OCR[31]<=~Busy;
  if (startUppCnt == `TIME_BUSY)
    Busy <=1;   
-end
+//end
 
 
-always @ (posedge sdClk) begin
+//always_ff @ (posedge sdPin.sdClk) begin
    qCmd<=sdPin.cmd;
-end
+//end
 
 //read data and cmd on rising edge
-always @ (posedge sdClk) begin
+//always_ff @ (posedge sdPin.sdClk) begin
  case(state)
    IDLE: begin
       mult_write <= 0; 
@@ -643,9 +649,9 @@ always @ (posedge sdClk) begin
    
    
  endcase    
-end 
+//end 
 
-always @ ( negedge sdClk) begin
+//always_ff @ ( negedge sdPin.sdClk) begin
  case(state)
 
 SEND_CMD: begin
@@ -681,11 +687,7 @@ SEND_CMD: begin
      
   end
  endcase
-end
-
-
-
-integer outdly_cnt;
+//end
 
 
 
@@ -693,7 +695,11 @@ integer outdly_cnt;
 
 
 
-always @ (posedge sdClk) begin
+
+
+
+
+//always_ff @ (posedge sdPin.sdClk) begin
   
   case (dataState)
   DATA_IDLE: begin
@@ -769,13 +775,12 @@ always @ (posedge sdClk) begin
   endcase
   
   
-end
+//end
 
 
 
-reg data_send_index;
-integer write_out_index;
-always @ (negedge sdClk) begin
+
+//always_ff @ (negedge sdPin.sdClk) begin
   
   case (dataState)
   DATA_IDLE: begin

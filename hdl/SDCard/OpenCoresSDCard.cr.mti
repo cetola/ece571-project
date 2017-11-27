@@ -1,11 +1,4 @@
-work/testbench/sdModel.sv {1 {vlog -work work -vopt -sv -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/sdModel.sv
-QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
--- Compiling module sdModel
-
-Top level modules:
-	sdModel
-
-} {} {}} work/testbench/wb_bus_mon.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/wb_bus_mon.v
+work/testbench/wb_bus_mon.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/wb_bus_mon.v
 QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 -- Compiling module WB_BUS_MON
 
