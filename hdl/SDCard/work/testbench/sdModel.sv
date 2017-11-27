@@ -316,21 +316,21 @@ always_ff @ (posedge sdPin.sdClk  )
  begin 
   
     q_start_bit <= sdPin.dat[0];
-//end
+end
 
-//always_ff @ (posedge sdPin.sdClk  )
-//begin : FSM_SEQ
+always_ff @ (posedge sdPin.sdClk  )
+begin : FSM_SEQ
     state <= next_state; 
-//end
+end
 
-//always_ff @ (posedge sdPin.sdClk  )
-//begin : FSM_SEQDAT
+always_ff @ (posedge sdPin.sdClk  )
+begin : FSM_SEQDAT
     dataState <= next_datastate; 
-//end
+end
 
 
 
-//always_ff @ (posedge sdPin.sdClk) begin
+always_ff @ (posedge sdPin.sdClk) begin
 if (CardTransferActive) begin
  if (InbuffStatus==0) //empty
    CardStatus[8]<=1;
@@ -344,15 +344,15 @@ else
  OCR[31]<=~Busy;
  if (startUppCnt == `TIME_BUSY)
    Busy <=1;   
-//end
+end
 
 
-//always_ff @ (posedge sdPin.sdClk) begin
+always_ff @ (posedge sdPin.sdClk) begin
    qCmd<=sdPin.cmd;
-//end
+end
 
 //read data and cmd on rising edge
-//always_ff @ (posedge sdPin.sdClk) begin
+always_ff @ (posedge sdPin.sdClk) begin
  case(state)
    IDLE: begin
       mult_write <= 0; 
@@ -649,9 +649,9 @@ else
    
    
  endcase    
-//end 
+end 
 
-//always_ff @ ( negedge sdPin.sdClk) begin
+always_ff @ ( negedge sdPin.sdClk) begin
  case(state)
 
 SEND_CMD: begin
@@ -687,7 +687,7 @@ SEND_CMD: begin
      
   end
  endcase
-//end
+end
 
 
 
@@ -699,7 +699,7 @@ SEND_CMD: begin
 
 
 
-//always_ff @ (posedge sdPin.sdClk) begin
+always_ff @ (posedge sdPin.sdClk) begin
   
   case (dataState)
   DATA_IDLE: begin
@@ -775,12 +775,12 @@ SEND_CMD: begin
   endcase
   
   
-//end
+end
 
 
 
 
-//always_ff @ (negedge sdPin.sdClk) begin
+always_ff @ (negedge sdPin.sdClk) begin
   
   case (dataState)
   DATA_IDLE: begin

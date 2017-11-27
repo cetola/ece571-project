@@ -147,14 +147,20 @@ assign sd_cmd = sd_cmd_oe ? cmdIn: 1'bz;
 assign sd_dat =  sd_dat_oe  ? datIn : 4'bz;
 assign card_detect = 1'b1;
 reg succes;
-sdModel sdModelTB0(sdPin);
+
+sdPins sdTopPins(
+.sdClk (sd_clk_pad_o),
+.cmd (sd_cmd),
+.dat (sd_dat)
+);
+
+sdModel sdModelTB0(sdTopPins);
 /*(
 .sdClk (sd_clk_pad_o),
 .cmd (sd_cmd),
 .dat (sd_dat)
 
 ); */
-
 
 //Instaciate SD-Card controller
 
@@ -2140,7 +2146,7 @@ begin
        end         
       6: begin      
          i_addr = `clock_d;
-         rsp = `RESET_CLK_DIV;
+         rsp = `RESET_CLK_DIV;//rsp = 16'h0002;	//
          data = 32'h0000_00FF;
        end       
                

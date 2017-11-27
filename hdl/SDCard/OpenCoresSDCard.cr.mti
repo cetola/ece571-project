@@ -60,7 +60,7 @@ QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 Top level modules:
 	sd_controller_wb
 
-} {} {}} work/testbench/sd_controller_top_tb.sv {1 {vlog -work work -vopt -sv -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/sd_controller_top_tb.sv
+} {} {}} work/testbench/sd_controller_top_tb.sv {1 {vlog -work work -vopt -sv -stats=none N:/ECE_571_Final_Project/SDCard/work/testbench/sd_controller_top_tb.sv
 QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 -- Compiling module sd_controller_top_tb
 
@@ -68,6 +68,9 @@ Top level modules:
 	sd_controller_top_tb
 
 } {} {}} work/testbench/sd_defines.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/sd_defines.v
+QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
+
+} {} {}} work/rtl-DMA/sd_defines.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/SDCard/work/rtl-DMA/sd_defines.v
 QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 
 } {} {}} work/rtl-DMA/sd_bd.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/rtl-DMA/sd_bd.v
@@ -98,9 +101,6 @@ QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 Top level modules:
 	sd_data_serial_host
 
-} {} {}} work/rtl-DMA/sd_defines.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/rtl-DMA/sd_defines.v
-QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
-
 } {} {}} work/rtl-DMA/sdc_controller.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/rtl-DMA/sdc_controller.v
 QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 -- Compiling module sdc_controller
@@ -108,7 +108,7 @@ QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 Top level modules:
 	sdc_controller
 
-} {} {}} work/testbench/wb_slave_behavioral.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/Existing_verilog_test_v5_sd_model/work/testbench/wb_slave_behavioral.v
+} {} {}} work/testbench/wb_slave_behavioral.v {1 {vlog -work work -vopt -stats=none N:/ECE_571_Final_Project/SDCard/work/testbench/wb_slave_behavioral.v
 QuestaSim-64 vlog 10.6b Compiler 2017.05 May 26 2017
 -- Compiling module WB_SLAVE_BEHAVIORAL
 

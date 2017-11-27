@@ -2146,7 +2146,7 @@ begin
        end         
       6: begin      
          i_addr = `clock_d;
-         rsp = `RESET_CLK_DIV;
+         rsp = `RESET_CLK_DIV;//rsp = 16'h0002;??????
          data = 32'h0000_00FF;
        end       
                
