@@ -154,6 +154,20 @@ sdPins sdTopPins(
 .dat (sd_dat)
 );
 
+integer f;
+
+initial
+begin
+	f = $fopen("SD_pin_log.csv");
+	$write(f,"sd_clk_pad_o,sd_cmd,sd_dat");
+	$fmonitor(f,"%h,%h,%h",sd_clk_pad_o, sd_cmd, sd_dat);
+end
+
+final
+begin
+	$fclose(f);
+end
+
 sdModel sdModelTB0(sdTopPins);
 /*(
 .sdClk (sd_clk_pad_o),
