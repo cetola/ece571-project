@@ -29,8 +29,8 @@ set library_file_list {
 										}
 
                            test_library   {						../../../bench/sdc_dma/verilog/wb_model_defines.v
-											../../../sd_controller_top_tb.sv
-											../../../sdModel.sv
+											../../../bench/sdc_dma/verilog/sd_controller_top_tb.sv
+											../../../bench/sdc_dma/verilog/sdModel.sv
 											../../../SDInterfaces.sv
 											../../../bench/sdc_dma/verilog/timescale.v
 											../../../bench/sdc_dma/verilog/wb_bus_mon.v

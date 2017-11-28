@@ -1,6 +1,8 @@
 #!/bin/bash
+#Authors:
+#Stpehano Cetola
 
-##Setup script for testing NAND in ModelSim.
+##Setup script for testing NAND using vsim & vlog.
 ##Run this script from the root project directory.
 
 #Create test dir and move files there
