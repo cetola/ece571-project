@@ -16,7 +16,7 @@
 ////      - Tadej Markovic, tadej@opencores.org                   ////
 ////      - Igor Mohor,     igorM@opencores.org                   ////
 //////////////////////////////////////////////////////////////////////
-////                  
+////
                                             ////
 //// Copyright (C) 2001, 2002 Authors                             ////
 ////                                                              ////
@@ -49,8 +49,6 @@
 `include "sd_defines.v"
 `define TIME $display("  Time: %0t", $time)
 
-`timescale 1ns / 1ns
-
 `define BD_RX 8'h60
 `define BD_TX 8'h80
 
@@ -62,18 +60,18 @@
 `define block 8'h20
 `define power 8'h24
 `define software 8'h28
-`define timeout 8'h2c  
-`define normal_isr 8'h30   
-`define error_isr 8'h34  
+`define timeout 8'h2c
+`define normal_isr 8'h30
+`define error_isr 8'h34
 `define normal_iser 8'h38
 `define error_iser 8'h3c
 `define capa 8'h48
 `define clock_d 8'h4c
 `define bd_status 8'h50
-`define bd_isr 8'h54 
-`define bd_iser 8'h58 
-`define bd_rx 8'h60  
-`define bd_tx 8'h80  
+`define bd_isr 8'h54
+`define bd_iser 8'h58
+`define bd_rx 8'h60
+`define bd_tx 8'h80
 `define  BD_ISR  8'h54
 `define SD_BASE              32'hd0000000
 `define CMD2 16'h200
@@ -135,48 +133,22 @@ reg   [7:0]  wbs_retries; // if RTY response, then this is the number of retries
 reg [799:0]  test_name; // used for tb_log_file
 //SD Card interface
 
-wire sd_cmd_oe;
-wire sd_dat_oe;
-wire cmdIn;
-wire [3:0] datIn;
-wire card_detect;
-trireg sd_cmd;
-tri [3:0] sd_dat;
+logic sd_cmd_oe;
+logic sd_dat_oe;
+logic cmdIn;
+logic [3:0] datIn;
+logic card_detect;
 
-assign sd_cmd = sd_cmd_oe ? cmdIn: 1'bz;
-assign sd_dat =  sd_dat_oe  ? datIn : 4'bz;
+SDInterface sdPins(sd_clk_pad_o);
+
+assign sdPins.cmd = sd_cmd_oe ? cmdIn: 1'bz;
+assign sdPins.data =  sd_dat_oe  ? datIn : 4'bz;
 assign card_detect = 1'b1;
 reg succes;
+sdModel sdModelTB0(sdPins);
 
-sdPins sdTopPins(
-.sdClk (sd_clk_pad_o),
-.cmd (sd_cmd),
-.dat (sd_dat)
-);
 
-integer f;
-
-initial
-begin
-	f = $fopen("SD_pin_log.csv");
-	$write(f,"sd_clk_pad_o,sd_cmd,sd_dat");
-	$fmonitor(f,"%h,%h,%h",sd_clk_pad_o, sd_cmd, sd_dat);
-end
-
-final
-begin
-	$fclose(f);
-end
-
-sdModel sdModelTB0(sdTopPins);
-/*(
-.sdClk (sd_clk_pad_o),
-.cmd (sd_cmd),
-.dat (sd_dat)
-
-); */
-
-//Instaciate SD-Card controller
+//Instantiate SD-Card controller
 
 sdc_controller sd_controller_top_0
 	(
@@ -200,10 +172,10 @@ sdc_controller sd_controller_top_0
 	 .m_wb_ack_i(wbm_sdm_ack_i),
 	 .m_wb_cti_o(wbm_sdm_cti_o),
 	 .m_wb_bte_o(wbm_sdm_bte_o),
-	 .sd_cmd_dat_i(sd_cmd),
+	 .sd_cmd_dat_i(sdPins.cmd),
    .sd_cmd_out_o (cmdIn ),
 	 .sd_cmd_oe_o (sd_cmd_oe),
-	 .sd_dat_dat_i ( sd_dat  ),  //sd_dat_pad_io),
+	 .sd_dat_dat_i ( sdPins.data  ),  //sd_dat_pad_io),
 	 .sd_dat_out_o (datIn  ) ,
    .sd_dat_oe_o ( sd_dat_oe  ),
 	 .sd_clk_o_pad  (sd_clk_pad_o),
@@ -214,7 +186,7 @@ sdc_controller sd_controller_top_0
   `ifdef IRQ_ENABLE
    ,.int_a (int_a),
     .int_b (int_b),
-    .int_c (int_c) 
+    .int_c (int_c)
   `endif
 	 );
 
@@ -255,9 +227,9 @@ WB_SLAVE_BEHAVIORAL wb_slave
     .WE_I (wbm_sdm_we_o),
     .CAB_I(1'b0)
 );
- 
 
- integer phy_log_file_desc;  
+
+ integer phy_log_file_desc;
 integer wb_s_mon_log_file_desc ;
 integer wb_m_mon_log_file_desc ;
 
@@ -325,13 +297,13 @@ begin
   succes = 1'b0;
   // Initial global values
   tests_successfull = 0;
-  tests_failed = 0;  
+  tests_failed = 0;
   wbm_working = 0;
   card_rca=0;
   wbm_init_waits = 4'h1;
   wbm_subseq_waits = 4'h3;
   wbs_waits = 4'h1;
-  wbs_retries = 8'h2; 
+  wbs_retries = 8'h2;
   wb_slave.cycle_response(`ACK_RESPONSE, wbs_waits, wbs_retries);
 
   // set DIFFERENT mrx_clk to mtx_clk!
@@ -340,56 +312,56 @@ begin
   //  Call tests
   //  ----------
   //note test T5 only valid when SD is in Testmode (sd_tb_defines.v file)
-   $display("T0 Start"); 
-  test_access_to_reg(0, 1);           // 0 - 1 //Test RW registers  
+   $display("T0 Start");
+  test_access_to_reg(0, 1);           // 0 - 1 //Test RW registers
   $display("");
   $display("===========================================================================");
   $display("T0 test_access_to_reg Completed");
   $display("===========================================================================");
-  
-  
-  $display("T1 Start");  
-  test_send_cmd(0, 3); 
+
+
+  $display("T1 Start");
+  test_send_cmd(0, 3);
   //   0:  Send CMD0, No Response                               ////
    //  1:  Send CMD3, 48-Bit Response, No error check
-    //2:  Send CMD3, 48-Bit Response, All Error check   
-  //   3:  Send CMD2, 136-Bit Response 
+    //2:  Send CMD3, 48-Bit Response, All Error check
+  //   3:  Send CMD2, 136-Bit Response
   $display("");
   $display("===========================================================================");
   $display("T1 test_send_cmd Completed");
   $display("===========================================================================");
-  
 
- $display("T2 Start");  
+
+ $display("T2 Start");
  test_init_sequnce(0, 1);
- $display("");  
+ $display("");
  $display("===========================================================================");
  $display("T2 test_init_sequence Completed");
  $display("===========================================================================");
-  
-  $display("T3 Start");  
+
+  $display("T3 Start");
   test_send_data(0, 1);
   $display("");
   $display("===========================================================================");
   $display("T3 test_send_data Completed");
   $display("===========================================================================");
-  
+
  // test_send_rec_data
-  $display("T4 Start");  
+  $display("T4 Start");
   test_send_rec_data(0, 1);
   $display("");
   $display("===========================================================================");
   $display("T4 test_send_rec_data Completed");
   $display("===========================================================================");
- 
+
   //test_send_rec_data
-   $display("T5 Start");  
+   $display("T5 Start");
   test_send_cmd_error_rsp(0, 3);
  $display("");
  $display("===========================================================================");
  $display("T5 test_send_cmd_error_rsp Complete");
  $display("===========================================================================");
- 
+
    //  test_send_rec_data_error_rsp
  test_send_rec_data_error_rsp(0, 1);
 // $display("");
@@ -412,46 +384,46 @@ integer     tb_log_file;
 
 initial
 begin
-  tb_log_file = $fopen("sdc_tb.log");
+  tb_log_file = $fopen("../log/sdc_tb.log");
   if (tb_log_file < 2)
   begin
-    $display("*E Could not open/create testbench log file in  directory!");
+    $display("*E Could not open/create testbench log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(tb_log_file, "========================== SD IP Core Testbench results ===========================");
   $fdisplay(tb_log_file, " ");
 
-  phy_log_file_desc = $fopen("eth_tb_phy.log");
+  phy_log_file_desc = $fopen("../log/eth_tb_phy.log");
   if (phy_log_file_desc < 2)
   begin
-    $fdisplay(tb_log_file, "*E Could not open/create sd_tb_phy.log file in  directory!");
+    $fdisplay(tb_log_file, "*E Could not open/create sd_tb_phy.log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(phy_log_file_desc, "================ PHY Module  Testbench access log ================");
   $fdisplay(phy_log_file_desc, " ");
 
-  memory_log_file_desc = $fopen("sd_tb_memory.log");
+  memory_log_file_desc = $fopen("../log/sd_tb_memory.log");
   if (memory_log_file_desc < 2)
   begin
-    $fdisplay(tb_log_file, "*E Could not open/create sd_tb_memory.log file in  directory!");
+    $fdisplay(tb_log_file, "*E Could not open/create sd_tb_memory.log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(memory_log_file_desc, "=============== MEMORY Module Testbench access log ===============");
   $fdisplay(memory_log_file_desc, " ");
 
-  host_log_file_desc = $fopen("eth_tb_host.log");
+  host_log_file_desc = $fopen("../log/eth_tb_host.log");
   if (host_log_file_desc < 2)
   begin
-    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_host.log file in  directory!");
+    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_host.log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(host_log_file_desc, "================ HOST Module Testbench access log ================");
   $fdisplay(host_log_file_desc, " ");
 
-  wb_s_mon_log_file_desc = $fopen("eth_tb_wb_s_mon.log");
+  wb_s_mon_log_file_desc = $fopen("../log/eth_tb_wb_s_mon.log");
   if (wb_s_mon_log_file_desc < 2)
   begin
-    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_wb_s_mon.log file in  directory!");
+    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_wb_s_mon.log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(wb_s_mon_log_file_desc, "============== WISHBONE Slave Bus Monitor error log ==============");
@@ -459,10 +431,10 @@ begin
   $fdisplay(wb_s_mon_log_file_desc, "   Only ERRONEOUS conditions are logged !");
   $fdisplay(wb_s_mon_log_file_desc, " ");
 
-  wb_m_mon_log_file_desc = $fopen("eth_tb_wb_m_mon.log");
+  wb_m_mon_log_file_desc = $fopen("../log/eth_tb_wb_m_mon.log");
   if (wb_m_mon_log_file_desc < 2)
   begin
-    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_wb_m_mon.log file in  directory!");
+    $fdisplay(tb_log_file, "*E Could not open/create eth_tb_wb_m_mon.log file in ../log/ directory!");
     $finish;
   end
   $fdisplay(wb_m_mon_log_file_desc, "============= WISHBONE Master Bus Monitor  error log =============");
@@ -475,7 +447,7 @@ begin
   #423 wb_rst =  1'b0;
 
   // Clear memories
-  //clear_memories;  
+  //clear_memories;
 
   #423 StartTB  =  1'b1;
 end
@@ -487,16 +459,16 @@ end
 always
 begin
   wb_clk=0;
-//  forever #2.5 WB_CLK_I = ~WB_CLK_I;  // 2*2.5 ns -> 200.0 MHz    
-//  forever #5 WB_CLK_I = ~WB_CLK_I;  // 2*5 ns -> 100.0 MHz    
-//  forever #10 WB_CLK_I = ~WB_CLK_I;  // 2*10 ns -> 50.0 MHz    
-  forever #12.5 wb_clk = ~wb_clk;  // 2*12.5 ns -> 40 MHz    
-//  forever #15 WB_CLK_I = ~WB_CLK_I;  // 2*10 ns -> 33.3 MHz    
-//  forever #20 WB_CLK_I = ~WB_CLK_I;  // 2*20 ns -> 25 MHz    
+//  forever #2.5 WB_CLK_I = ~WB_CLK_I;  // 2*2.5 ns -> 200.0 MHz
+//  forever #5 WB_CLK_I = ~WB_CLK_I;  // 2*5 ns -> 100.0 MHz
+//  forever #10 WB_CLK_I = ~WB_CLK_I;  // 2*10 ns -> 50.0 MHz
+  forever #12.5 wb_clk = ~wb_clk;  // 2*12.5 ns -> 40 MHz
+//  forever #15 WB_CLK_I = ~WB_CLK_I;  // 2*10 ns -> 33.3 MHz
+//  forever #20 WB_CLK_I = ~WB_CLK_I;  // 2*20 ns -> 25 MHz
 //  forever #25 WB_CLK_I = ~WB_CLK_I;  // 2*25 ns -> 20.0 MHz
-//  forever #31.25 WB_CLK_I = ~WB_CLK_I;  // 2*31.25 ns -> 16.0 MHz    
+//  forever #31.25 WB_CLK_I = ~WB_CLK_I;  // 2*31.25 ns -> 16.0 MHz
 //  forever #50 WB_CLK_I = ~WB_CLK_I;  // 2*50 ns -> 10.0 MHz
-//  forever #55 WB_CLK_I = ~WB_CLK_I;  // 2*55 ns ->  9.1 MHz    
+//  forever #55 WB_CLK_I = ~WB_CLK_I;  // 2*55 ns ->  9.1 MHz
 end
 
 //TEST Cases
@@ -547,16 +519,16 @@ hard_reset;
 ////  test_send_cmd:                                          ////
 ////                                                          ////
 ////                                ////
-///   
-///   0:  Send CMD3, 48-Bit Response, All Error check   
+///
+///   0:  Send CMD3, 48-Bit Response, All Error check
 ///                         ////
-///   
+///
 //////////////////////////////////////////////////////////////////////
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
+  ////                                                          ////
   //Test 0:  Send CMD, No Response                               ////
   //////////////////////////////////////////////////////////////////////
   if (test_num == 0) //
@@ -569,61 +541,61 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'hff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0] != 1)
          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-           
-         
+
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
-       end 
-       
-                 
-   
-     
+        $display("Normal status register is not 0x1: %h", tmp_data);
+       end
+
+
+
+
     end
-    
- 
-       
- 
-       
-                 
-   
-     
-    
-    
+
+
+
+
+
+
+
+
+
+
   end
    if(fail == 0)
       test_ok;
@@ -652,9 +624,9 @@ input  [31:0]  start_task;
   integer        i_length;
   integer        tmp_data;
     integer        resp_data;
-  reg    [31:0]  tx_bd_num; 
-  
-  
+  reg    [31:0]  tx_bd_num;
+
+
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_data;
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_tmp_data;
   integer        i;
@@ -682,10 +654,10 @@ hard_reset;
 
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
-  //Test 3.0:  Init sequence, With response check  
+  ////                                                          ////
+  //Test 3.0:  Init sequence, With response check
   //CMD 0. Reset Card
   //CMD 8. Get voltage (Only 2.0 Card response to this)            ////
   //CMD55. Indicate Next Command are Application specific
@@ -703,337 +675,337 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h2ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //CMD 0 Reset card
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0] != 1)
-         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
+         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST4.0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
         end
-       
-      //CMD 8. Get voltage (Only 2.0 Card response to this)  
-        addr = `SD_BASE + `command ; 
-       data = `CMD8 | `RSP_48 ; 
+
+      //CMD 8. Get voltage (Only 2.0 Card response to this)
+        addr = `SD_BASE + `command ;
+       data = `CMD8 | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);      
-     
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //wait for send finnish or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 8, Erro check =0, rsp = 0;
-       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);      
-       while (tmp_data[0] != 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
-          if (tmp_data[15]) begin
-             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);  
-             tmp_data=1;       
-          end        
-       end
-    resp_data[31]=1; //Just to make it to not skip first 
-    while (resp_data[31]) begin //Wait until busy is clear in the card
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
-       data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
-      //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0] != 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+          if (tmp_data[15]) begin
+             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);
+             tmp_data=1;
+          end
+       end
+    resp_data[31]=1; //Just to make it to not skip first
+    while (resp_data[31]) begin //Wait until busy is clear in the card
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
+       data = 0; //CMD index 0, Erro check =0, rsp = 0;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+      //wait for response or timeout
+       addr = `SD_BASE + `normal_isr   ;
+       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+       while (tmp_data[0] != 1) begin
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 41      
-         addr = `SD_BASE + `command ; 
-         data = `ACMD41 | `RSP_48 ; 
+
+        //Send ACMD 41
+         addr = `SD_BASE + `command ;
+         data = `ACMD41 | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0] != 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 41  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-     end 
-        
-      //Send CMD 2      
-       addr = `SD_BASE + `command ; 
+     end
+
+      //Send CMD 2
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `CRCE | `RSP_136 ; //CMD index 2, CRC and Index Check, rsp = 136 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
-       
-        addr = `SD_BASE + `resp1   ; 
+
+
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         $display("CID reg 1: %h", resp_data);
-        
-       //Send CMD 3      
-       addr = `SD_BASE + `command ; 
+
+       //Send CMD 3
+       addr = `SD_BASE + `command ;
        data = `CMD3 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         card_rca= resp_data [31:16];
- 
+
         $display("RCA Response: %h", resp_data);
         $display("RCA Nr for data transfer: %h", card_rca);
-        
+
         //Put in transferstate
-        //Send CMD 7      
-       addr = `SD_BASE + `command ; 
+        //Send CMD 7
+       addr = `SD_BASE + `command ;
        data = `CMD7 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data[31:16] = card_rca; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD7 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
+
        //Set bus width
-       
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
+
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 6     
-         addr = `SD_BASE + `command ; 
-         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ; 
+
+        //Send ACMD 6
+         addr = `SD_BASE + `command ;
+         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 2; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 6  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        
-        addr = `SD_BASE + `resp1   ; 
+
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        $display("Card status after Bus width set %h", resp_data);  
+        $display("Card status after Bus width set %h", resp_data);
        //write data
        sdModelTB0.add_wrong_data_crc<=1;
-        addr = `SD_BASE + `BD_TX  ; 
+        addr = `SD_BASE + `BD_TX  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
-        addr = `SD_BASE + `BD_TX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
 
-        addr = `SD_BASE + `BD_ISR  ;         
+        addr = `SD_BASE + `BD_TX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+
+        addr = `SD_BASE + `BD_ISR  ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        
+
         	while (  resp_data[0]  !=1   ) begin
 			      wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
 			      if (resp_data[1] ) begin
 			       test_fail_num("Error in TEST 4.0: Data resend When Writing try >N.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Data resend When Writing try >N.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Data resend When Writing try >N.  BD_ISR  %h", resp_data);
 			      end
 			      if (resp_data[2] ) begin
 			         test_fail_num("Error in TEST 4.0: FIFO underflow/overflow When Writing.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: FIFO underflow/overflow When Writing.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: FIFO underflow/overflow When Writing.  BD_ISR  %h", resp_data);
 			      end
             if (resp_data[4] ) begin
 			         test_fail_num("Error in TEST 4.0: Command error When Writing.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Command error When Writing.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Command error When Writing.  BD_ISR  %h", resp_data);
 			      end
 			      if (resp_data[5] ) begin
 			         test_fail_num("Error in TEST 4.0: Data CRC error When Writing.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Data CRC error When Writing.  BD_ISR  %h", resp_data); 
-			      end   			        
+             $display("Error in TEST 4.0: Data CRC error When Writing.  BD_ISR  %h", resp_data);
+			      end
 			      sdModelTB0.add_wrong_data_crc<=0;
-			    end  
-			    clear_memories;  
+			    end
+			    clear_memories;
 sdModelTB0.add_wrong_data_crc<=1;
-			     addr = `SD_BASE + `BD_RX  ; 
+			     addr = `SD_BASE + `BD_RX  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
-        addr = `SD_BASE + `BD_RX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
 
-        addr = `SD_BASE + `BD_ISR  ;  
+        addr = `SD_BASE + `BD_RX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+
+        addr = `SD_BASE + `BD_ISR  ;
         data=0;
-        
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);       
+
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        
+
         	while (  resp_data[0]  !=1   ) begin
 			      wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
 			      if (resp_data[1] ) begin
 			       test_fail_num("Error in TEST 4.0 When Reading: Data resend try >N.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 When Reading: Data resend try >N.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 When Reading: Data resend try >N.  BD_ISR  %h", resp_data);
 			      end
 			       if (resp_data[2] ) begin
 			         test_fail_num("Error in TEST 4.0 When Reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 When Reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 When Reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
 			      end
             if (resp_data[4] ) begin
 			         test_fail_num("Error in TEST 4.0 When Reading: Command error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Command error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Command error.  BD_ISR  %h", resp_data);
 			      end
 			       if (resp_data[5] ) begin
 			         test_fail_num("Error in TEST 4.0: Data CRC error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Data CRC error When Reading.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Data CRC error When Reading.  BD_ISR  %h", resp_data);
 			      end
-        			        
-			      
-			    end  
-        
+
+
+			    end
+
   end
   end
    if(fail == 0)
@@ -1057,9 +1029,9 @@ input  [31:0]  start_task;
   integer        i_length;
   integer        tmp_data;
     integer        resp_data;
-  reg    [31:0]  tx_bd_num; 
-  
-  
+  reg    [31:0]  tx_bd_num;
+
+
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_data;
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_tmp_data;
   integer        i;
@@ -1085,10 +1057,10 @@ hard_reset;
 
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
-  //Test 3.0:  Init sequence, With response check  
+  ////                                                          ////
+  //Test 3.0:  Init sequence, With response check
   //CMD 0. Reset Card
   //CMD 8. Get voltage (Only 2.0 Card response to this)            ////
   //CMD55. Indicate Next Command are Application specific
@@ -1106,337 +1078,337 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h2ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //CMD 0 Reset card
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1)
-         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
+         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST4.0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
         end
-       
-      //CMD 8. Get voltage (Only 2.0 Card response to this)  
-        addr = `SD_BASE + `command ; 
-       data = `CMD8 | `RSP_48 ; 
+
+      //CMD 8. Get voltage (Only 2.0 Card response to this)
+        addr = `SD_BASE + `command ;
+       data = `CMD8 | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);      
-     
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //wait for send finnish or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 8, Erro check =0, rsp = 0;
-       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);      
-       while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
-          if (tmp_data[15]) begin
-             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);  
-             tmp_data=1;       
-          end        
-       end
-    resp_data[31]=1; //Just to make it to not skip first 
-    while (resp_data[31]) begin //Wait until busy is clear in the card
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
-       data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
-      //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+          if (tmp_data[15]) begin
+             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);
+             tmp_data=1;
+          end
+       end
+    resp_data[31]=1; //Just to make it to not skip first
+    while (resp_data[31]) begin //Wait until busy is clear in the card
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
+       data = 0; //CMD index 0, Erro check =0, rsp = 0;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+      //wait for response or timeout
+       addr = `SD_BASE + `normal_isr   ;
+       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+       while (tmp_data[0]!= 1) begin
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 41      
-         addr = `SD_BASE + `command ; 
-         data = `ACMD41 | `RSP_48 ; 
+
+        //Send ACMD 41
+         addr = `SD_BASE + `command ;
+         data = `ACMD41 | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 41  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-     end 
-        
-      //Send CMD 2      
-       addr = `SD_BASE + `command ; 
+     end
+
+      //Send CMD 2
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `CRCE | `RSP_136 ; //CMD index 2, CRC and Index Check, rsp = 136 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
-       
-        addr = `SD_BASE + `resp1   ; 
+
+
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         $display("CID reg 1: %h", resp_data);
-        
-       //Send CMD 3      
-       addr = `SD_BASE + `command ; 
+
+       //Send CMD 3
+       addr = `SD_BASE + `command ;
        data = `CMD3 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         card_rca= resp_data [31:16];
- 
+
         $display("RCA Response: %h", resp_data);
         $display("RCA Nr for data transfer: %h", card_rca);
-        
+
         //Put in transferstate
-        //Send CMD 7      
-       addr = `SD_BASE + `command ; 
+        //Send CMD 7
+       addr = `SD_BASE + `command ;
        data = `CMD7 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data[31:16] = card_rca; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD7 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
+
        //Set bus width
-       
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
+
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 6     
-         addr = `SD_BASE + `command ; 
-         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ; 
+
+        //Send ACMD 6
+         addr = `SD_BASE + `command ;
+         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 2; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 6  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        
-        addr = `SD_BASE + `resp1   ; 
-        wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        $display("Card status after Bus width set %h", resp_data);  
-       //write data
-       
-        addr = `SD_BASE + `BD_TX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
-        addr = `SD_BASE + `BD_TX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
 
-        addr = `SD_BASE + `BD_ISR  ;         
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        
+        $display("Card status after Bus width set %h", resp_data);
+       //write data
+
+        addr = `SD_BASE + `BD_TX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+        addr = `SD_BASE + `BD_TX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+
+        addr = `SD_BASE + `BD_ISR  ;
+        wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+
         	while (  resp_data[0]  !=1   ) begin
 			      wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
 			      if (resp_data[1] ) begin
 			       test_fail_num("Error in TEST 4.0 when writing: Data resend try >N.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when writing: Data resend try >N.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when writing: Data resend try >N.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[2] ) begin
 			         test_fail_num("Error in TEST 4.0 when writing :  FIFO underflow/overflow.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when writing: FIFO underflow/overflow.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when writing: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
 			      end
             else if (resp_data[4] ) begin
 			         test_fail_num("Error in TEST 4.0 when writing: Command error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when writing: Command error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when writing: Command error.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[5] ) begin
 			         test_fail_num("Error in TEST 4.0 when writing: Data CRC error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when writing: Data CRC error.  BD_ISR  %h", resp_data); 
-			      end   			        
-			      
-			    end  
-			    clear_memories;  
+             $display("Error in TEST 4.0 when writing: Data CRC error.  BD_ISR  %h", resp_data);
+			      end
 
-			     addr = `SD_BASE + `BD_RX  ; 
+			    end
+			    clear_memories;
+
+			     addr = `SD_BASE + `BD_RX  ;
         data = 0; //
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
-        addr = `SD_BASE + `BD_RX  ; 
+
+        addr = `SD_BASE + `BD_RX  ;
         data = 0; //C
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
 
-        addr = `SD_BASE + `BD_ISR  ;  
+
+        addr = `SD_BASE + `BD_ISR  ;
         data=0;
-        
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);       
+
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        
+
         	while (  resp_data[0]  !=1   ) begin
 			      wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
 			      if (resp_data[1] ) begin
 			       test_fail_num("Error in TEST 4.0 when reading: Data resend try >N.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when reading: Data resend try >N.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when reading: Data resend try >N.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[2] ) begin
 			         test_fail_num("Error in TEST 4.0 when reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when reading: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
 			      end
             else if (resp_data[4] ) begin
 			         test_fail_num("Error in TEST 4.0 when reading: Command error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when reading: Command error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when reading: Command error.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[5] ) begin
 			         test_fail_num("Error in TEST 4.0 when reading: Data CRC error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0 when reading: Data CRC error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0 when reading: Data CRC error.  BD_ISR  %h", resp_data);
 			      end
-        			        
-			      
-			    end  
-        
+
+
+			    end
+
   end
   end
    if(fail == 0)
@@ -1467,9 +1439,9 @@ input  [31:0]  start_task;
   integer        i_length;
   integer        tmp_data;
     integer        resp_data;
-  reg    [31:0]  tx_bd_num; 
-  
-  
+  reg    [31:0]  tx_bd_num;
+
+
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_data;
   reg    [((`MAX_BLK_SIZE * 32) - 1):0] burst_tmp_data;
   integer        i;
@@ -1497,10 +1469,10 @@ hard_reset;
 
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
-  //Test 3.0:  Init sequence, With response check  
+  ////                                                          ////
+  //Test 3.0:  Init sequence, With response check
   //CMD 0. Reset Card
   //CMD 8. Get voltage (Only 2.0 Card response to this)            ////
   //CMD55. Indicate Next Command are Application specific
@@ -1518,296 +1490,296 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h2ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //CMD 0 Reset card
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1)
-         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
+         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST4.0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
         end
-       
-      //CMD 8. Get voltage (Only 2.0 Card response to this)  
-        addr = `SD_BASE + `command ; 
-       data = `CMD8 | `RSP_48 ; 
+
+      //CMD 8. Get voltage (Only 2.0 Card response to this)
+        addr = `SD_BASE + `command ;
+       data = `CMD8 | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);      
-     
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //wait for send finnish or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 8, Erro check =0, rsp = 0;
-       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);      
-       while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
-          if (tmp_data[15]) begin
-             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);  
-             tmp_data=1;       
-          end        
-       end
-    resp_data[31]=1; //Just to make it to not skip first 
-    while (resp_data[31]) begin //Wait until busy is clear in the card
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
-       data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
-      //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+          if (tmp_data[15]) begin
+             $display("V 1.0 Card, Timeout In TEST 4.0 %h", tmp_data);
+             tmp_data=1;
+          end
+       end
+    resp_data[31]=1; //Just to make it to not skip first
+    while (resp_data[31]) begin //Wait until busy is clear in the card
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
+       data = 0; //CMD index 0, Erro check =0, rsp = 0;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+      //wait for response or timeout
+       addr = `SD_BASE + `normal_isr   ;
+       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+       while (tmp_data[0]!= 1) begin
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 41      
-         addr = `SD_BASE + `command ; 
-         data = `ACMD41 | `RSP_48 ; 
+
+        //Send ACMD 41
+         addr = `SD_BASE + `command ;
+         data = `ACMD41 | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 41  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-     end 
-        
-      //Send CMD 2      
-       addr = `SD_BASE + `command ; 
+     end
+
+      //Send CMD 2
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `CRCE | `RSP_136 ; //CMD index 2, CRC and Index Check, rsp = 136 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD2 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
-       
-        addr = `SD_BASE + `resp1   ; 
+
+
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         $display("CID reg 1: %h", resp_data);
-        
-       //Send CMD 3      
-       addr = `SD_BASE + `command ; 
+
+       //Send CMD 3
+       addr = `SD_BASE + `command ;
        data = `CMD3 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD3 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         card_rca= resp_data [31:16];
- 
+
         $display("RCA Response: %h", resp_data);
         $display("RCA Nr for data transfer: %h", card_rca);
-        
+
         //Put in transferstate
-        //Send CMD 7      
-       addr = `SD_BASE + `command ; 
+        //Send CMD 7
+       addr = `SD_BASE + `command ;
        data = `CMD7 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data[31:16] = card_rca; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD7 in TEST 4.0", i_addr);
             `TIME;
-             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD7 Error in TEST 4.0 status reg: %h", tmp_data);
+         end
       end
-       
+
        //Set bus width
-       
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
+
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 4.0", i_addr);
             `TIME;
-             $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 6     
-         addr = `SD_BASE + `command ; 
-         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ; 
+
+        //Send ACMD 6
+         addr = `SD_BASE + `command ;
+         data = `ACMD6 |`CICE | `CRCE | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 2; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 6  in TEST 4.0", i_addr);
            `TIME;
-            $display("Error in TEST 4.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 4.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        
-        addr = `SD_BASE + `resp1   ; 
-        wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        $display("Card status after Bus width set %h", resp_data);  
-       //write data
-       
-        addr = `SD_BASE + `BD_TX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
-        addr = `SD_BASE + `BD_TX  ; 
-        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        
 
-        addr = `SD_BASE + `BD_ISR  ;         
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-        
+        $display("Card status after Bus width set %h", resp_data);
+       //write data
+
+        addr = `SD_BASE + `BD_TX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+        addr = `SD_BASE + `BD_TX  ;
+        data = 0; //CMD index 0, Erro check =0, rsp = 0;
+        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+
+        addr = `SD_BASE + `BD_ISR  ;
+        wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+
         	while (  resp_data[0]  !=1   ) begin
 			      wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
 			      if (resp_data[1] ) begin
 			       test_fail_num("Error in TEST 4.0: Data resend try >N.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Data resend try >N.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Data resend try >N.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[2] ) begin
 			         test_fail_num("Error in TEST 4.0: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: FIFO underflow/overflow.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: FIFO underflow/overflow.  BD_ISR  %h", resp_data);
 			      end
             else if (resp_data[4] ) begin
 			         test_fail_num("Error in TEST 4.0: Command error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Command error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Command error.  BD_ISR  %h", resp_data);
 			      end
 			      else if (resp_data[5] ) begin
 			         test_fail_num("Error in TEST 4.0: Data CRC error.  BD_ISR  %h", resp_data);
             `TIME;
-             $display("Error in TEST 4.0: Data CRC error.  BD_ISR  %h", resp_data); 
+             $display("Error in TEST 4.0: Data CRC error.  BD_ISR  %h", resp_data);
 			      end
-        			        
-			      
-			    end  
-        
+
+
+			    end
+
   end
   end
    if(fail == 0)
@@ -1858,10 +1830,10 @@ hard_reset;
 
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
-  //Test 3.0:  Init sequence, With response check  
+  ////                                                          ////
+  //Test 3.0:  Init sequence, With response check
   //CMD 0. Reset Card
   //CMD 8. Get voltage (Only 2.0 Card response to this)            ////
   //CMD55. Indicate Next Command are Application specific
@@ -1879,179 +1851,179 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h2ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //CMD 0 Reset card
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1)
-         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
+         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
         end
-       
-      //CMD 8. Get voltage (Only 2.0 Card response to this)  
-        addr = `SD_BASE + `command ; 
-       data = `CMD8 | `RSP_48 ; 
+
+      //CMD 8. Get voltage (Only 2.0 Card response to this)
+        addr = `SD_BASE + `command ;
+       data = `CMD8 | `RSP_48 ;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);      
-     
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //wait for send finnish or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 8, Erro check =0, rsp = 0;
-       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);      
-       while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);         
-          if (tmp_data[15]) begin
-             $display("V 1.0 Card, Timeout In TEST 3.0 %h", tmp_data);  
-             tmp_data=1;       
-          end        
-       end
-    resp_data[31]=1; //Just to make it to not skip first 
-    while (resp_data[31]) begin //Wait until busy is clear in the card
-         //Send CMD 55      
-       addr = `SD_BASE + `command ; 
-       data = `CMD55 |`CICE | `CRCE | `RSP_48 ; 
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
-       data = 0; //CMD index 0, Erro check =0, rsp = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
-      //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
-          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);          
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+          if (tmp_data[15]) begin
+             $display("V 1.0 Card, Timeout In TEST 3.0 %h", tmp_data);
+             tmp_data=1;
+          end
+       end
+    resp_data[31]=1; //Just to make it to not skip first
+    while (resp_data[31]) begin //Wait until busy is clear in the card
+         //Send CMD 55
+       addr = `SD_BASE + `command ;
+       data = `CMD55 |`CICE | `CRCE | `RSP_48 ;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
+       data = 0; //CMD index 0, Erro check =0, rsp = 0;
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
+      //wait for response or timeout
+       addr = `SD_BASE + `normal_isr   ;
+       wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
+       while (tmp_data[0]!= 1) begin
+          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
              fail = fail + 1;
-             addr = `SD_BASE + `error_isr ; 
+             addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
              test_fail_num("Error occured when sending CMD55 in TEST 3.0", i_addr);
             `TIME;
-             $display("Error in TEST 3.0 status reg: %h", tmp_data);  
+             $display("Error in TEST 3.0 status reg: %h", tmp_data);
           end
         end
-    
-        //Send ACMD 41      
-         addr = `SD_BASE + `command ; 
-         data = `ACMD41 | `RSP_48 ; 
+
+        //Send ACMD 41
+         addr = `SD_BASE + `command ;
+         data = `ACMD41 | `RSP_48 ;
          wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-        //Argument settings 
-        addr = `SD_BASE + `argument  ; 
+        //Argument settings
+        addr = `SD_BASE + `argument  ;
         data = 0; //CMD index 0, Erro check =0, rsp = 0;
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
         //wait for response or timeout
-        addr = `SD_BASE + `normal_isr   ; 
+        addr = `SD_BASE + `normal_isr   ;
         wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
             wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending ACMD 41  in TEST 3.0", i_addr);
            `TIME;
-            $display("Error in TEST 3.0 status reg: %h", tmp_data);  
+            $display("Error in TEST 3.0 status reg: %h", tmp_data);
           end
           //Read response data
         end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-     end 
-        
-      //Send CMD 2      
-       addr = `SD_BASE + `command ; 
+     end
+
+      //Send CMD 2
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `CRCE | `RSP_136 ; //CMD index 2, CRC and Index Check, rsp = 136 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 3.0", i_addr);
             `TIME;
-             $display("CMD2 Error in TEST 3.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD2 Error in TEST 3.0 status reg: %h", tmp_data);
+         end
       end
-       
-       
-        addr = `SD_BASE + `resp1   ; 
+
+
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         $display("CID reg 1: %h", resp_data);
-        
-       //Send CMD 3      
-       addr = `SD_BASE + `command ; 
+
+       //Send CMD 3
+       addr = `SD_BASE + `command ;
        data = `CMD3 |  `CRCE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 3.0", i_addr);
             `TIME;
-             $display("CMD3 Error in TEST 3.0 status reg: %h", tmp_data);  
-         end     
+             $display("CMD3 Error in TEST 3.0 status reg: %h", tmp_data);
+         end
       end
-        addr = `SD_BASE + `resp1   ; 
+        addr = `SD_BASE + `resp1   ;
         wbm_read(addr, resp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
         card_rca= resp_data [31:16];
- 
+
         $display("RCA Response: %h", resp_data);
         $display("RCA Nr for data transfer: %h", card_rca);
-        
+
   end
   end
    if(fail == 0)
@@ -2115,7 +2087,7 @@ begin
   ////////////////////////////////////////////////////////////////////
   ////                                                            ////
   ////  Test all RW register for:                                    ////
-  ////  1: Read access (Correct reset values)                     ////                      
+  ////  1: Read access (Correct reset values)                     ////
   ////  2: Write/Read                       ////
   ////////////////////////////////////////////////////////////////////
   if (test_num == 0) //
@@ -2123,111 +2095,111 @@ begin
     // TEST 0: BYTE SELECTS ON 3 32-BIT READ-WRITE REGISTERS ( VARIOUS BUS DELAYS )
     test_name   = "TEST 0: 32-BIT READ-WRITE REGISTERS ( VARIOUS BUS DELAYS )";
     `TIME; $display("  TEST 0: 3 32-BIT READ-WRITE REGISTERS ( VARIOUS BUS DELAYS )");
-    
+
     data = 0;
     rand_sel = 0;
     sel = 0;
-    
+
     for (i = 1; i <= 19; i = i + 1) // num of registers
     begin
       wbm_init_waits = 0;
       wbm_subseq_waits = {$random} % 5; // it is not important for single accesses
       case (i)
-      1: begin      
+      1: begin
          i_addr = `bd_iser;
          rsp = 0;
          data = 32'h0000_00FF;
        end
-      2:begin      
+      2:begin
          i_addr = `command;
          rsp = 0;
          data = 32'h0000_FFFF;
-       end             
-      3:begin      
+       end
+      3:begin
          i_addr = `timeout;
          rsp = 0;
          data = 32'h0000_FFFF;
-       end       
-      4: begin      
+       end
+      4: begin
          i_addr = `normal_iser;
          rsp = 0;
          data = 32'h0000_FFFF;
-       end       
-      5:begin      
+       end
+      5:begin
          i_addr = `error_iser;
          rsp = 0;
          data = 32'h0000_FFFF;
-       end         
-      6: begin      
+       end
+      6: begin
          i_addr = `clock_d;
-         rsp = `RESET_CLK_DIV;//rsp = 16'h0002;??????
+         rsp = `RESET_CLK_DIV;
          data = 32'h0000_00FF;
-       end       
-               
-      19: begin      
+       end
+
+      19: begin
          i_addr = `argument;
          rsp = 0;
          data = 32'hFFFF_FFFF;
-       end      
-       
-       8: begin      
-         i_addr = `status;
-         rsp = 0;         
        end
-       
-      9: begin      
+
+       8: begin
+         i_addr = `status;
+         rsp = 0;
+       end
+
+      9: begin
          i_addr = `resp1;
-         rsp = 0;         
-       end   
-       
-       10: begin      
+         rsp = 0;
+       end
+
+       10: begin
          i_addr = `controller;
-         rsp = 2;         
-       end    
-      
-       11: begin      
+         rsp = 2;
+       end
+
+       11: begin
          i_addr = `block;
-         rsp = 16'h200;         
-       end  
-       
-        12: begin      
+         rsp = 16'h200;
+       end
+
+        12: begin
          i_addr = `power;
-         rsp = 16'h00F;         
-       end   
-       
-        13: begin      
+         rsp = 16'h00F;
+       end
+
+        13: begin
          i_addr = `software;
-         rsp = 16'h000;         
-       end  
-       
-        14: begin      
+         rsp = 16'h000;
+       end
+
+        14: begin
          i_addr = `timeout;
-         rsp = 16'hFFFF;         
-       end   
-       
-        15: begin      
+         rsp = 16'hFFFF;
+       end
+
+        15: begin
          i_addr = `normal_isr;
-         rsp = 16'h0004;         
-       end      
-
-         
+         rsp = 16'h0004;
+       end
 
 
-      17: begin      
+
+
+      17: begin
          i_addr = `capa;
-         rsp = 16'h000;         
-       end      
-      18: begin      
+         rsp = 16'h000;
+       end
+      18: begin
          i_addr = `bd_status;
-         rsp = 16'h0808;         
-       end      
-       
-      default : begin      
+         rsp = 16'h0808;
+       end
+
+      default : begin
          i_addr = `capa;
-         rsp = 16'h000;         
-       end  
-           
-     
+         rsp = 16'h000;
+       end
+
+
       endcase
       addr = `SD_BASE + i_addr;
       sel = 4'hF;
@@ -2239,7 +2211,7 @@ begin
         `TIME;
         $display("Wrong defaulte value @ addr %h, tmp_data %h, should b %h", addr, tmp_data,rsp);
       end
- 
+
         // set value to 32'hFFFF_FFFF
       if ( (i<=6) || (i==19) ) begin
         wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
@@ -2311,15 +2283,15 @@ sdModelTB0.add_wrong_cmd_crc<=1;
 ////                                                          ////
 ////  0:  Send CMD0, No Response                               ////
 ///   1:  Send CMD3, 48-Bit Response, No error check
-///   2:  Send CMD3, 48-Bit Response, All Error check   
+///   2:  Send CMD3, 48-Bit Response, All Error check
 ///   3:  Send CMD2, 136-Bit Response                          ////
-///   
+///
 //////////////////////////////////////////////////////////////////////
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
+  ////                                                          ////
   //Test 5:  Send CMD, with a simulated bus error               ////
   //////////////////////////////////////////////////////////////////////
   if (test_num == 0) //
@@ -2333,48 +2305,48 @@ begin
      rand_sel = 0;
      sel = 4'hF;
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'hff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
        sdModelTB0.add_wrong_cmd_crc<=1;
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1)
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-           
-         
+
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0 in TEST5", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
-       end 
-       
-                 
-   
-     
+        $display("Normal status register is not 0x1: %h", tmp_data);
+       end
+
+
+
+
     end
             sdModelTB0.add_wrong_cmd_crc<=1;
             sdModelTB0.add_wrong_cmd_indx<=1;
@@ -2391,55 +2363,55 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD3 | `RSP_48 ; //CMD index 3, Erro check =0, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD3 in TEST 5", i_addr);
             `TIME;
-             $display("Error status reg: %h", tmp_data);  
+             $display("Error status reg: %h", tmp_data);
         end
-       
-      end    
-         
+
+      end
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD3 in TEST 5", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
        end
-            
+
     end
      //////////////////////////////////////////////////////////////////////
    ////Prereq: A valid CMD index which responde with 48 bit has to be sent //
@@ -2454,55 +2426,55 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD3 | `CICE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
-          
-            addr = `SD_BASE + `error_isr ; 
+
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-         
+
             `TIME;
              $display("Bus error succesfully catched, Error status register: %h", tmp_data);
-             tmp_data[0]=1; 
+             tmp_data[0]=1;
         end
-       
-      end   
 
-     
-       
-       
-                 
-   
-     
+      end
+
+
+
+
+
+
+
     end
 
 
@@ -2515,61 +2487,61 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `RSP_136 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 5", i_addr);
             `TIME;
-             $display("Error status reg: %h", tmp_data);  
+             $display("Error status reg: %h", tmp_data);
         end
-       
-      end    
-         
+
+      end
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD2 in TEST3", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
        end
-       
-       
-                 
-   
-     
+
+
+
+
+
     end
-    
+
   end
    if(fail == 0)
       test_ok;
@@ -2622,15 +2594,15 @@ hard_reset;
 ////                                                          ////
 ////  0:  Send CMD0, No Response                               ////
 ///   1:  Send CMD3, 48-Bit Response, No error check
-///   2:  Send CMD3, 48-Bit Response, All Error check   
+///   2:  Send CMD3, 48-Bit Response, All Error check
 ///   3:  Send CMD2, 136-Bit Response                          ////
-///   
+///
 //////////////////////////////////////////////////////////////////////
 for (test_num = start_task; test_num <= end_task; test_num = test_num + 1)
 begin
-        
+
   //////////////////////////////////////////////////////////////////////
-  ////                                                          //// 
+  ////                                                          ////
   //Test 0:  Send CMD, No Response                               ////
   //////////////////////////////////////////////////////////////////////
   if (test_num == 0) //
@@ -2643,64 +2615,64 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h80;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+
       //Enable IRQ_A on Normal Interupt register, Sending complete and Send Fail
        addr = `SD_BASE + `normal_iser ;
        data = 16'h8001;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
-      
+
+
       //Setup settings for command
-       addr = `SD_BASE + `command ; 
+       addr = `SD_BASE + `command ;
        data = 16'h802; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Argument settings for command
-       addr = `SD_BASE + `argument  ; 
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for send finnish
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1)
          wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //When send finnish check if any error
-       addr = `SD_BASE + `error_isr   ; 
-       data = 0; 
+       addr = `SD_BASE + `error_isr   ;
+       data = 0;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
-              
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD0", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
-       end 
-       
-                 
-   
-     
+        $display("Normal status register is not 0x1: %h", tmp_data);
+       end
+
+
+
+
     end
-    
-      
+
+
    //////////////////////////////////////////////////////////////////////
    ////    Prereq: A valid CMD index which responde with 48 bit has to be sent //
    /// Test 1:  Send CMD, 48-Bit Response, No error check             ////
@@ -2714,55 +2686,55 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD3 | `RSP_48 ; //CMD index 3, Erro check =0, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD3 in TEST 1", i_addr);
             `TIME;
-             $display("Error status reg: %h", tmp_data);  
+             $display("Error status reg: %h", tmp_data);
         end
-       
-      end    
-         
+
+      end
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD3 in TEST 1", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
        end
-            
+
     end
      //////////////////////////////////////////////////////////////////////
    ////Prereq: A valid CMD index which responde with 48 bit has to be sent //
@@ -2777,59 +2749,59 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD3 | `CICE | `CRCE | `RSP_48 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD3 in TEST 2", i_addr);
             `TIME;
-             $display("Error status reg: %h", tmp_data);  
+             $display("Error status reg: %h", tmp_data);
         end
-       
-      end    
-         
+
+      end
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD3 in TEST2", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
        end
-       
-       
-                 
-   
-     
+
+
+
+
+
     end
      if (test_num == 3) //
     begin
@@ -2840,61 +2812,61 @@ begin
      data = 0;
      rand_sel = 0;
      sel = 4'hF;
-      
+
       //Reset Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 1;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Setup timeout reg 
-       addr = `SD_BASE + `timeout  ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup timeout reg
+       addr = `SD_BASE + `timeout  ;
        data = 16'h1ff;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
-      //Clock divider /2 
-        addr = `SD_BASE + `clock_d   ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Clock divider /2
+        addr = `SD_BASE + `clock_d   ;
        data = 16'h0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits); 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
       //Start Core
-       addr = `SD_BASE + `software ; 
+       addr = `SD_BASE + `software ;
        data = 0;
-       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);     
-      //Setup settings 
-       addr = `SD_BASE + `command ; 
+       wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
+      //Setup settings
+       addr = `SD_BASE + `command ;
        data = `CMD2 | `RSP_136 ; //CMD index 3, CRC and Index Check, rsp = 48 bit;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      //Argument settings 
-       addr = `SD_BASE + `argument  ; 
+      //Argument settings
+       addr = `SD_BASE + `argument  ;
        data = 0; //CMD index 0, Erro check =0, rsp = 0;
        wbm_write(addr, data, 4'hF, 1, wbm_init_waits, wbm_subseq_waits);
-      
+
       //wait for response or timeout
-       addr = `SD_BASE + `normal_isr   ; 
+       addr = `SD_BASE + `normal_isr   ;
        wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
        while (tmp_data[0]!= 1) begin
           wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
           if (tmp_data[15]== 1) begin
             fail = fail + 1;
-            addr = `SD_BASE + `error_isr ; 
+            addr = `SD_BASE + `error_isr ;
              wbm_read(addr, tmp_data, sel, 1, wbm_init_waits, wbm_subseq_waits);
             test_fail_num("Error occured when sending CMD2 in TEST 3", i_addr);
             `TIME;
-             $display("Error status reg: %h", tmp_data);  
+             $display("Error status reg: %h", tmp_data);
         end
-       
-      end    
-         
+
+      end
+
        if (tmp_data[15]) begin
          fail = fail + 1;
          test_fail_num("Error occured when sending CMD2 in TEST3", i_addr);
          `TIME;
-        $display("Normal status register is not 0x1: %h", tmp_data);         
+        $display("Normal status register is not 0x1: %h", tmp_data);
        end
-       
-       
-                 
-   
-     
+
+
+
+
+
     end
-    
+
   end
    if(fail == 0)
       test_ok;
@@ -2931,7 +2903,7 @@ task wbm_write;
   integer i;
 begin
   wbm_working = 1;
-  
+
   write_status = 0;
 
   flags                    = 0;
@@ -3030,7 +3002,7 @@ task clear_memories;
 begin
   for (adr_i = 0; adr_i < 4194304; adr_i = adr_i + 1)
   begin
-   
+
     wb_slave.wb_memory[adr_i[21:2]] = 0;
   end
 end
