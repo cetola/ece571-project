@@ -73,6 +73,8 @@ wlf*
 *.wlf
 *.vstf
 *.ucdb
+*.bak
+*.BAK
 cov*/
 transcript*
 sc_dpiheader.h
