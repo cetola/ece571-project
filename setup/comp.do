@@ -58,9 +58,8 @@ set top_level              test_library.sd_controller_top_tb
 
 
 
-set wave_patterns {
-                           /*
-}
+set wave_patterns {}
+
 set wave_radices {
                            hexadecimal {data q}
 }
@@ -110,7 +109,7 @@ foreach {library file_list} $library_file_list {
 set last_compile_time $time_now
 
 # Load the simulation
-eval vsim -suppress TSCALE $top_level
+eval vsim -novopt -suppress TSCALE $top_level
 
 # If waves are required
 if [llength $wave_patterns] {
