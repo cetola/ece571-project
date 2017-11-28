@@ -12,6 +12,7 @@ cp -r hdl/SDCard/work/rtl-DMA/* sd-con/rtl/sdc_dma/
 cp -r hdl/SDCard/work/testbench/* sd-con/bench/sdc_dma/verilog/
 cp hdl/SDCard/work/SDInterfaces.sv sd-con/
 cp setup/comp.do sd-con/sim/rtl_sim/run/
+mkdir sd-con/sim/rtl_sim/log
 
 #CD into nand-con and setup git for change tracking.
 cd sd-con
