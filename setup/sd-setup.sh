@@ -6,11 +6,11 @@
 ##Run this script from the root project directory.
 
 #Create test dir, setup origional app, then overlay changes
-mkdir sd-con
+mkdir -p sd-con
 cp -r originals/OpenCoresSDCard/* sd-con/
 cp -r hdl/sdc/* sd-con/bench/sdc_dma/verilog/
 cp setup/comp.do sd-con/sim/rtl_sim/run/
-mkdir sd-con/sim/rtl_sim/log
+mkdir -p sd-con/sim/rtl_sim/log
 chmod -R a+r sd-con
 
 #CD into nand-con and setup git for change tracking.
