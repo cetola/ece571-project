@@ -5,7 +5,10 @@
 //
 // Description:
 // NAND flash datastore
-// Some day this should be backed up by BRAM or something similar
+// This would be implemented by actual NAND flash.
+// For our project, it would more likely be backed up
+// by block device storage on an FPGA board. Maybe even
+// by an actual SD Card to maximize the irony.
 
 `timescale 1 ns / 1 fs
 

@@ -9,7 +9,10 @@
 
 `timescale 1 ns / 1 ps
 
-interface flash_tb_interface(flash_cmd_interface.master fc, buffer_interface.writer buff, flash_interface fi); // pragma attribute flash_tb_interface partition_interface_xif
+interface flash_tb_interface(
+  flash_cmd_interface.master fc,
+  buffer_interface.writer buff,
+  flash_interface fi); // pragma attribute flash_tb_interface partition_interface_xif
 
 logic [0:2047][7:0] memory;
 
@@ -22,7 +25,6 @@ endtask : reset_wait
 // --------------------------------------------------------------------
 task reset_cycle; //pragma tbx xtf
 begin
-    kill_time();
     $display("reset start");
     @(posedge fc.clk);
     fc.cmd = 3'b011;
@@ -33,7 +35,6 @@ begin
    @(posedge fc.clk);
    fc.cmd = 3'b111;
    $display($time,"  %m  \t \t  << reset function over >>");
-   kill_time();
 end
 endtask
 
@@ -44,23 +45,22 @@ task erase_cycle; //pragma tbx xtf
     input [15:0]  address;
 begin
     $display($time,"  %m  \t \t  << erase flash block Address = %h >>",address);
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
     #3;
     fc.RWA=address;
     fc.cmd=3'b100;
     fc.start=1'b1;
 
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
     #3;
     fc.start=1'b0;
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
 
    wait(fc.done);
-   @(posedge fc.clk) ;
+   @(posedge fc.clk);
    fc.cmd=3'b111;
 
    $display("erase done");
-   kill_time();
 
 end
 endtask : erase_cycle
@@ -75,35 +75,34 @@ task write_cycle; //pragma tbx xtf
 
 begin
     $display($time,"  %m  \t \t  << Writing flash page Address = %h >>",address);
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
     #3;
     fc.RWA = address;
     fc.cmd = 3'b001;
     fc.start = 1'b1;
     buff.BF_sel = 1'b1;
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
     #3;
     fc.start = 1'b0;
     buff.BF_ad = 0;
     for(i=0;i<2048;i=i+1) begin
-       @(posedge fc.clk) ;
+       @(posedge fc.clk);
        #3;
        buff.BF_we = 1'b1;
        memory[i]=$random % 256;
        buff.BF_din <= memory[i];
        buff.BF_ad <= #3 i;
     end
-   @(posedge fc.clk) ;
-   @(posedge fc.clk) ;
+   @(posedge fc.clk);
+   @(posedge fc.clk);
    #3;
    buff.BF_we = 1'b0;
    wait(fc.done);
-   @(posedge fc.clk) ;
+   @(posedge fc.clk);
    #3;
    fc.cmd = 3'b111;
    buff.BF_sel = 1'b0;
    $display("Wrote to addres: %h", address);
-   kill_time();
 end
 endtask : write_cycle
 
@@ -118,7 +117,7 @@ task read_cycle; //pragma tbx xtf
 
   begin
   temp<=8'h24;
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   #3;
   fc.RWA = address;
   fc.cmd = 3'b010;
@@ -126,22 +125,21 @@ task read_cycle; //pragma tbx xtf
   buff.BF_sel = 1'b1;
   buff.BF_we = 1'b0;
   buff.BF_ad = #3 0;
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   #3;
   fc.start = 1'b0;
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   wait(fc.done);
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   #3;
   fc.cmd = 3'b111;
   buff.BF_ad <= #3 buff.BF_ad + 1;
   for(i=0;i<2048;i=i+1) begin
-    @(posedge fc.clk) ;
+    @(posedge fc.clk);
     temp <= memory[i];
     buff.BF_ad <= #3 buff.BF_ad + 1;
   end
   $display("Read from address %h.", address);
-  kill_time();
 end
 endtask : read_cycle
 
@@ -153,37 +151,21 @@ task read_id_cycle; //pragma tbx xtf
   input [15:0]  address;
 
   begin
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   #3;
   fc.RWA = address;
   fc.cmd = 3'b101;
   fc.start = 1'b1;
   buff.BF_sel = 1'b1;
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   #3;
   fc.start = 1'b0;
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   wait(fc.done);
-  @(posedge fc.clk) ;
+  @(posedge fc.clk);
   fc.cmd = 3'b111;
   $display($time,"  %m  \t \t  << read id function over >>");
-  kill_time();
   end
 endtask : read_id_cycle
-
-task kill_time;
-  begin
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-    @(posedge fc.clk);
-  end
-endtask
 
 endinterface
