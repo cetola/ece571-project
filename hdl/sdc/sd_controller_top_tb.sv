@@ -141,6 +141,19 @@ logic card_detect;
 
 SDInterface sdPins(sd_clk_pad_o);
 
+integer f;
+
+initial
+	begin
+	f = $fopen("SD_Pin_log.csv");
+	$fwrite(f,"sd_clk_pad_o,cmdIn,datIn,sdPins.cmd,sdPins.data\n");
+	$fmonitor(f,"%h,%h,%h,%h,%h",sd_clk_pad_o,cmdIn,datIn,sdPins.cmd,sdPins.data);
+	end
+final
+	begin
+	$fclose(f);
+	end
+
 assign sdPins.cmd = sd_cmd_oe ? cmdIn: 1'bz;
 assign sdPins.data =  sd_dat_oe  ? datIn : 4'bz;
 assign card_detect = 1'b1;
@@ -368,7 +381,7 @@ begin
 //  $display("===========================================================================");
  $display("T6 test_send_cmd_error_rsp Complete");
  // $display("===========================================================================");
- $display("All Test finnished. Nr Failed: %d, Nr Succes: %d", tests_failed,tests_successfull);
+ $display("All Test finnished. Failed: %d, Succeeded: %d", tests_failed,tests_successfull);
   succes = 1'b1;
 end
 

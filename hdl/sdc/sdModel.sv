@@ -8,7 +8,7 @@
 `define DLY_TO_OUTP 47
 
 `define BLOCKSIZE 512
-`define MEMSIZE 24643590 // 2mb block
+localparam MEMSIZE = 24643590; // 2mb block
 `define BLOCK_BUFFER_SIZE 1
 `define TIME_BUSY 63
 
@@ -21,77 +21,116 @@
 module sdModel(SDInterface sdPin);
 
 
-reg oeCmd;
-reg oeDat;
-reg cmdOut;
-reg [3:0] datOut;
-reg [10:0] transf_cnt;
+typedef struct {
+	//output data
+	reg oeCmd;
+	reg oeDat;
+	reg cmdOut;
+	reg [3:0] datOut;
+	reg [10:0] transf_cnt;
+	} outStruct;
+
+outStruct sdOut;
+
+//output assignment
+assign sdPins.cmd = sdOut.oeCmd ? sdOut.cmdOut : 1'bz;
+assign sdPins.data = sdOut.oeDat ? sdOut.datOut : 4'bz;
+
+typedef struct {
+	reg [5:0] lastCMD;
+	reg cardIdentificationState;
+	reg CardTransferActive;
+	reg [2:0] BusWidth;
+	} cardStatusStruct;
+
+cardStatusStruct cardStatus;
+
+
+typedef struct {
+	//memory and input buffer
+	reg InbuffStatus;
+	reg [31:0] BlockAddr;
+	reg [7:0] Inbuff [0:511];
+	} memFlashStruct;
+
+memFlashStruct memFlash;
+
+reg [7:0] FLASHmem [0:MEMSIZE]; //cannot be declared in a structure
+
+typedef struct {
+	//command and CRC bits
+	reg [46:0]inCmd;
+	reg [5:0]cmdRead;
+	reg [7:0] cmdWrite;
+	reg crcIn;
+	reg crcEn;
+	reg crcRst;
+	reg [31:0] CardStatus;
+	//following definitions found at http://advdownload.advantech.com/productfile/PIS/96FMMSDI-1G-ET-AT1/Product - Datasheet/96FMMSDI-1G-ET-AT1_datasheet20170331164213.pdf
+	reg [15:0] RCA;		//Relative Card Address
+	reg [31:0] OCR;		//Operation conditions register
+	reg [120:0] CID;	//Card identification number
+	reg [120:0] CSD;	//Card specific data, info about  extra features and abilities
+	reg Busy; //0 when busy
+	reg [4:0] crc_c;
+	} cardInfoStruct;
+
+cardInfoStruct cardInfo;
+
+wire [6:0] crcOut;	//cannot put wire in structure, not a variable!
 
 
 
-reg [5:0] lastCMD;
-reg cardIdentificationState;
-reg CardTransferActive;
-reg [2:0] BusWidth;
-
-assign sdPins.cmd = oeCmd ? cmdOut : 1'bz;
-assign sdPins.data = oeDat ? datOut : 4'bz;
-
-reg InbuffStatus;
-reg [31:0] BlockAddr;
-reg [7:0] Inbuff [0:511];
-reg [7:0] FLASHmem [0:`MEMSIZE];
 
 
-reg [46:0]inCmd;
-reg [5:0]cmdRead;
-reg [7:0] cmdWrite;
-reg crcIn;
-reg crcEn;
-reg crcRst;
-reg [31:0] CardStatus;
-reg [15:0] RCA;
-reg [31:0] OCR;
-reg [120:0] CID;
-reg [120:0] CSD;
-reg Busy; //0 when busy
-wire [6:0] crcOut;
-reg [4:0] crc_c;
 
-reg [3:0] CurrentState;
-reg [3:0] DataCurrentState;
+
+
+//removed unecessary registers
+//reg [3:0] CurrentState;
+//reg [3:0] DataCurrentState;
+
+
 `define RCASTART 16'h2000
 `define OCRSTART 32'hff8000
 `define STATUSSTART 32'h0
 `define CIDSTART 128'hffffffddddddddaaaaaaaa99999999  //Just some random data not really usefull anyway
 `define CSDSTART 128'hadaeeeddddddddaaaaaaaa12345678
 
+//Flash delay?
 `define outDelay 4
 reg [2:0] outDelayCnt;
 reg [9:0] flash_write_cnt;
 reg [8:0] flash_blockwrite_cnt;
 
-parameter SIZE = 10;
-parameter CONTENT_SIZE = 40;
-parameter
-    IDLE   =  10'b0000_0000_01,
-    READ_CMD   =  10'b0000_0000_10,
-    ANALYZE_CMD	    =  10'b0000_0001_00,
-    SEND_CMD	    =  10'b0000_0010_00;
-reg [SIZE-1:0] state;
-reg [SIZE-1:0] next_state;
+//One hot encoded command states
+localparam onehotCommandStates = 4;
+typedef enum logic [onehotCommandStates-1:0] {
+	IDLE 		= 4'b0001,
+	READ_CMD   	= 4'b0010,
+	ANALYZE_CMD	= 4'b0100,
+	SEND_CMD	= 4'b1000
+	} commandStates;
 
-parameter
-    DATA_IDLE   =10'b0000_0000_01,
-    READ_WAITS  =10'b0000_0000_10,
-    READ_DATA  = 10'b0000_0001_00,
-    WRITE_FLASH =10'b0000_0010_00,
-    WRITE_DATA  =10'b0000_0100_00;
+commandStates state, next_state;
+
+//One hot encoded data states
+localparam onehotDataStates = 5;
+typedef enum logic [onehotDataStates-1:0] {
+	DATA_IDLE   	= 5'b00001,
+    	READ_WAITS  	= 5'b00010,
+   	READ_DATA  	= 5'b00100,
+    	WRITE_FLASH 	= 5'b01000,
+    	WRITE_DATA  	= 5'b10000
+	} dataStates;
+
+dataStates dataState, next_datastate;
+
+
 parameter okcrctoken = 4'b0101;
 parameter invalidcrctoken = 4'b1111;
-reg [SIZE-1:0] dataState;
-reg [SIZE-1:0] next_datastate;
 
+//use 1 bit
 reg ValidCmd;
 reg inValidCmd;
 
@@ -105,7 +144,7 @@ integer responseType;
      reg [3:0] last_din;
 
 
-
+//data read and write enable
 reg crcDat_rst;
 reg mult_read;
 reg mult_write;
@@ -114,17 +153,20 @@ reg [3:0] crcDat_in;
 wire [15:0] crcDat_out [3:0];
 
 genvar i;
-generate
+generate	//4 CRC checkers for each data line?
 for(i=0; i<4; i=i+1) begin:CRC_16_gen
   sd_crc_16 CRC_16_i (crcDat_in[i],crcDat_en, sdPin.clk, crcDat_rst, crcDat_out[i]);
 end
 endgenerate
+
+//crc checker for cmd?
 sd_crc_7 crc_7(
-crcIn,
-crcEn,
-sdPin.clk,
-crcRst,
-crcOut);
+	cardInfo.crcIn,
+	cardInfo.crcEn,
+	sdPin.clk,
+	cardInfo.crcRst,
+	crcOut
+	);
 
 reg stop;
 
@@ -152,47 +194,47 @@ initial begin
   add_wrong_cmd_indx<=0;
   add_wrong_cmd_crc<=0;
    stop<=1;
-  cardIdentificationState<=1;
+  cardStatus.cardIdentificationState<=1;
   state<=IDLE;
   dataState<=DATA_IDLE;
-  Busy<=0;
-  oeCmd<=0;
+  cardInfo.Busy<=0;
+  sdOut.oeCmd<=0;
   crcCnt<=0;
-  CardTransferActive<=0;
+  cardStatus.CardTransferActive<=0;
   qCmd<=1;
-  oeDat<=0;
-  cmdOut<=0;
-  cmdWrite<=0;
-  InbuffStatus<=0;
-  datOut<=0;
-  inCmd<=0;
-  BusWidth<=1;
+  sdOut.oeDat<=0;
+  sdOut.cmdOut<=0;
+  cardInfo.cmdWrite<=0;
+  memFlash.InbuffStatus<=0;
+  sdOut.datOut<=0;
+  cardInfo.inCmd<=0;
+  cardStatus.BusWidth<=1;
   responseType=0;
   mult_read=0;
   mult_write=0;
-  crcIn<=0;
+  cardInfo.crcIn<=0;
   response_S<=0;
-  crcEn<=0;
-  crcRst<=0;
-  cmdRead<=0;
+  cardInfo.crcEn<=0;
+  cardInfo.crcRst<=0;
+  cardInfo.cmdRead<=0;
   ValidCmd<=0;
-  inValidCmd=0;
+  inValidCmd<=0;
   appendCrc<=0;
-  RCA<= `RCASTART;
-  OCR<= `OCRSTART;
-  CardStatus <= `STATUSSTART;
-  CID<=`CIDSTART;
-  CSD<=`CSDSTART;
+  cardInfo.RCA<= `RCASTART;
+  cardInfo.OCR<= `OCRSTART;
+  cardInfo.CardStatus <= `STATUSSTART;
+  cardInfo.CID<=`CIDSTART;
+  cardInfo.CSD<=`CSDSTART;
   response_CMD<=0;
   outDelayCnt<=0;
   crcDat_rst<=1;
   crcDat_en<=0;
   crcDat_in<=0;
-  transf_cnt<=0;
-  BlockAddr<=0;
+  sdOut.transf_cnt<=0;
+  memFlash.BlockAddr<=0;
   block_cnt <=0;
   wptr<=0;
-  transf_cnt<=0;
+  sdOut.transf_cnt<=0;
   crcDat_rst<=1;
   crcDat_en<=0;
   crcDat_in<=0;
@@ -201,11 +243,23 @@ initial begin
   flash_blockwrite_cnt<=0;
 end
 
+integer f;
+
+initial
+	begin
+	f = $fopen("sdModel_ValidCmd_log.csv");
+	$fwrite(f,"ValidCmd,inValidCmd,outDelayCnt\n");
+	//$fmonitor();
+	end
+final
+	begin
+	$fclose(f);
+	end
 //CARD logic
 
-always_comb //@ (state or sdPin.cmd or cmdRead or ValidCmd or inValidCmd or cmdWrite or outDelayCnt)
+always_comb //@ (state or sdPin.cmd or cardInfo.cmdRead or ValidCmd or inValidCmd or cardInfo.cmdWrite or outDelayCnt)
 begin : FSM_COMBO
- next_state  = 0;
+ //next_state  = 0;
 case(state)
 IDLE: begin
    if (!sdPin.cmd)
@@ -214,12 +268,13 @@ IDLE: begin
      next_state = IDLE;
 end
 READ_CMD: begin
-  if (cmdRead>= 47)
+  if (cardInfo.cmdRead>= 47)
      next_state = ANALYZE_CMD;
   else
      next_state =  READ_CMD;
  end
  ANALYZE_CMD: begin
+	$display("",);
   if ((ValidCmd  )   && (outDelayCnt >= `outDelay ))
      next_state = SEND_CMD;
   else if (inValidCmd)
@@ -228,7 +283,7 @@ READ_CMD: begin
     next_state =  ANALYZE_CMD;
  end
  SEND_CMD: begin
-    if (cmdWrite>= response_S)
+    if (cardInfo.cmdWrite>= response_S)
      next_state = IDLE;
   else
      next_state =  SEND_CMD;
@@ -239,14 +294,14 @@ READ_CMD: begin
  endcase
 end
 
-always_comb // @ (dataState or CardStatus or crc_c or flash_write_cnt or sdPin.data[0] )
+always_comb // @ (dataState or cardInfo.CardStatus or cardInfo.crc_c or flash_write_cnt or sdPin.data[0] )
 begin : FSM_COMBODAT
- next_datastate  = 0;
+ //next_datastate  = 0;
 case(dataState)
  DATA_IDLE: begin
-   if ((CardStatus[12:9]==`RCV) ||  (mult_write == 1'b1) )
+   if ((cardInfo.CardStatus[12:9]==`RCV) ||  (mult_write == 1'b1) )
      next_datastate = READ_WAITS;
-   else if ((CardStatus[12:9]==`DATAS )||  (mult_read == 1'b1) )
+   else if ((cardInfo.CardStatus[12:9]==`DATAS )||  (mult_read == 1'b1) )
      next_datastate = WRITE_DATA;
    else
      next_datastate = DATA_IDLE;
@@ -260,7 +315,7 @@ case(dataState)
  end
 
  READ_DATA : begin
-  if (crc_c==0  )
+  if (cardInfo.crc_c==0  )
      next_datastate =  WRITE_FLASH;
   else begin
 	if (stop == 1'b0)
@@ -279,7 +334,7 @@ case(dataState)
 end
 
   WRITE_DATA : begin
-    if (transf_cnt >= `BIT_BLOCK)
+    if (sdOut.transf_cnt >= `BIT_BLOCK)
        next_datastate= DATA_IDLE;
     else
 		 begin
@@ -295,7 +350,7 @@ end
 
 always_ff @ (posedge sdPin.clk  )
  begin
-
+	$fwrite(f,"%h,%h,%h\n",ValidCmd,inValidCmd,outDelayCnt);
     q_start_bit <= sdPin.data[0];
  end
 
@@ -312,19 +367,19 @@ end
 
 
 always @ (posedge sdPin.clk) begin
-if (CardTransferActive) begin
- if (InbuffStatus==0) //empty
-   CardStatus[8]<=1;
+if (cardStatus.CardTransferActive) begin
+ if (memFlash.InbuffStatus==0) //empty
+   cardInfo.CardStatus[8]<=1;
   else
-   CardStatus[8]<=0;
+   cardInfo.CardStatus[8]<=0;
   end
 else
-  CardStatus[8]<=1;
+  cardInfo.CardStatus[8]<=1;
 
  startUppCnt<=startUppCnt+1;
- OCR[31]<=~Busy;
+ cardInfo.OCR[31]<=~cardInfo.Busy;
  if (startUppCnt == `TIME_BUSY)
-   Busy <=1;
+   cardInfo.Busy <=1;
 end
 
 
@@ -338,16 +393,16 @@ always @ (posedge sdPin.clk) begin
    IDLE: begin
       mult_write <= 0;
       mult_read <=0;
-      crcIn<=0;
-      crcEn<=0;
-      crcRst<=1;
-      oeCmd<=0;
+      cardInfo.crcIn<=0;
+      cardInfo.crcEn<=0;
+      cardInfo.crcRst<=1;
+      sdOut.oeCmd<=0;
       stop<=0;
-      cmdRead<=0;
+      cardInfo.cmdRead<=0;
       appendCrc<=0;
       ValidCmd<=0;
-      inValidCmd=0;
-      cmdWrite<=0;
+      inValidCmd<=0;
+      cardInfo.cmdWrite<=0;
       crcCnt<=0;
       response_CMD<=0;
       response_S<=0;
@@ -355,38 +410,38 @@ always @ (posedge sdPin.clk) begin
       responseType=0;
     end
    READ_CMD: begin //read cmd
-      crcEn<=1;
-      crcRst<=0;
-      crcIn <= #`tIH qCmd;
-      inCmd[47-cmdRead]  <= #`tIH qCmd;
-      cmdRead <= #1 cmdRead+1;
-      if (cmdRead >= 40)
-         crcEn<=0;
+      cardInfo.crcEn<=1;
+      cardInfo.crcRst<=0;
+      cardInfo.crcIn <= #`tIH qCmd;
+      cardInfo.inCmd[47-cardInfo.cmdRead]  <= #`tIH qCmd;
+      cardInfo.cmdRead <= #1 cardInfo.cmdRead+1;
+      if (cardInfo.cmdRead >= 40)
+         cardInfo.crcEn<=0;
 
-      if (cmdRead == 46) begin
-          oeCmd<=1;
-     cmdOut<=1;
+      if (cardInfo.cmdRead == 46) begin
+          sdOut.oeCmd<=1;
+     sdOut.cmdOut<=1;
       end
    end
 
    ANALYZE_CMD: begin//check for valid cmd
    //Wrong CRC go idle
-    if (inCmd[46] == 0) //start
-      inValidCmd=1;
-    else if (inCmd[7:1] != crcOut) begin
-      inValidCmd=1;
+    if (cardInfo.inCmd[46] == 0) //start
+      inValidCmd<=1;
+    else if (cardInfo.inCmd[7:1] != crcOut) begin
+      inValidCmd<=1;
       $fdisplay(sdModel_file_desc, "**sd_Model Commando CRC Error") ;
       $display(sdModel_file_desc, "**sd_Model Commando CRC Error") ;
     end
-    else if  (inCmd[0] != 1)  begin//stop
-      inValidCmd=1;
+    else if  (cardInfo.inCmd[0] != 1)  begin//stop
+      inValidCmd<=1;
       $fdisplay(sdModel_file_desc, "**sd_Model Commando No Stop Bit Error") ;
       $display(sdModel_file_desc, "**sd_Model Commando No Stop Bit Error") ;
     end
     else begin
       if(outDelayCnt ==0)
-        CardStatus[3]<=0;
-      case(inCmd[45:40])
+        cardInfo.CardStatus[3]<=0;
+      case(cardInfo.inCmd[45:40])
         0 : response_S <= 0;
         2 : response_S <= 136;
         3 : response_S <= 48;
@@ -396,98 +451,98 @@ always @ (posedge sdPin.clk) begin
         14 : response_S <= 0;
         16 : response_S <= 48;
         17 : response_S <= 48;
-		18 : response_S <= 48;
+	18 : response_S <= 48;
         24 : response_S <= 48;
-		25 : response_S <= 48;
+	25 : response_S <= 48;
         33 : response_S <= 48;
         55 : response_S <= 48;
         41 : response_S <= 48;
     endcase
-         case(inCmd[45:40])
+         case(cardInfo.inCmd[45:40])
         0 : begin
             response_CMD <= 0;
-            cardIdentificationState<=1;
+            cardStatus.cardIdentificationState<=1;
             ResetCard;
         end
         2 : begin
-         if (lastCMD != 41 && outDelayCnt==0) begin
+         if (cardStatus.lastCMD != 41 && outDelayCnt==0) begin
                $fdisplay(sdModel_file_desc, "**Error in sequnce, ACMD 41 should precede 2 in Startup state") ;
                //$display(sdModel_file_desc, "**Error in sequnce, ACMD 41 should precede 2 in Startup state") ;
-               CardStatus[3]<=1;
+               cardInfo.CardStatus[3]<=1;
             end
-        response_CMD[127:8] <= CID;
+        response_CMD[127:8] <= cardInfo.CID;
         appendCrc<=0;
-        CardStatus[12:9] <=2;
+        cardInfo.CardStatus[12:9] <=2;
         end
         3 :  begin
-           if (lastCMD != 2 && outDelayCnt==0 ) begin
+           if (cardStatus.lastCMD != 2 && outDelayCnt==0 ) begin
                $fdisplay(sdModel_file_desc, "**Error in sequnce, CMD 2 should precede 3 in Startup state") ;
                //$display(sdModel_file_desc, "**Error in sequnce, CMD 2 should precede 3 in Startup state") ;
-               CardStatus[3]<=1;
+               cardInfo.CardStatus[3]<=1;
             end
-        response_CMD[127:112] <= RCA[15:0] ;
-        response_CMD[111:96] <= CardStatus[15:0] ;
+        response_CMD[127:112] <= cardInfo.RCA[15:0] ;
+        response_CMD[111:96] <= cardInfo.CardStatus[15:0] ;
         appendCrc<=1;
-        CardStatus[12:9] <=3;
-        cardIdentificationState<=0;
+        cardInfo.CardStatus[12:9] <=3;
+        cardStatus.cardIdentificationState<=0;
        end
         6 : begin
-           if (lastCMD == 55 && outDelayCnt==0) begin
-              if (inCmd[9:8] == 2'b10) begin
-               BusWidth <=4;
+           if (cardStatus.lastCMD == 55 && outDelayCnt==0) begin
+              if (cardInfo.inCmd[9:8] == 2'b10) begin
+               cardStatus.BusWidth <=4;
                     $display(sdModel_file_desc, "**BUS WIDTH 4 ") ;
                end
               else
-               BusWidth <=1;
+               cardStatus.BusWidth <=1;
 
               response_S<=48;
-              response_CMD[127:96] <= CardStatus;
+              response_CMD[127:96] <= cardInfo.CardStatus;
            end
            else if (outDelayCnt==0)begin
              response_CMD <= 0;
              response_S<=0;
-             $fdisplay(sdModel_file_desc, "**Error Invalid CMD, %h",inCmd[45:40]) ;
-           //  $display(sdModel_file_desc, "**Error Invalid CMD, %h",inCmd[45:40]) ;
+             $fdisplay(sdModel_file_desc, "**Error Invalid CMD, %h",cardInfo.inCmd[45:40]) ;
+           //  $display(sdModel_file_desc, "**Error Invalid CMD, %h",cardInfo.inCmd[45:40]) ;
             end
         end
         7: begin
          if (outDelayCnt==0) begin
-          if (inCmd[39:24]== RCA[15:0]) begin
-              CardTransferActive <= 1;
-              response_CMD[127:96] <= CardStatus ;
-              CardStatus[12:9] <=`TRAN;
+          if (cardInfo.inCmd[39:24]== cardInfo.RCA[15:0]) begin
+              cardStatus.CardTransferActive <= 1;
+              response_CMD[127:96] <= cardInfo.CardStatus ;
+              cardInfo.CardStatus[12:9] <=`TRAN;
           end
           else begin
-               CardTransferActive <= 0;
-               response_CMD[127:96] <= CardStatus ;
-               CardStatus[12:9] <=3;
+               cardStatus.CardTransferActive <= 0;
+               response_CMD[127:96] <= cardInfo.CardStatus ;
+               cardInfo.CardStatus[12:9] <=3;
           end
          end
         end
         8 : response_CMD[127:96] <= 0; //V1.0 card
 
 		9 : begin
-         if (lastCMD != 41 && outDelayCnt==0) begin
+         if (cardStatus.lastCMD != 41 && outDelayCnt==0) begin
                $fdisplay(sdModel_file_desc, "**Error in sequnce, ACMD 41 should precede 2 in Startup state") ;
                //$display(sdModel_file_desc, "**Error in sequnce, ACMD 41 should precede 2 in Startup state") ;
-               CardStatus[3]<=1;
+               cardInfo.CardStatus[3]<=1;
             end
-        response_CMD[127:8] <= CSD;
+        response_CMD[127:8] <= cardInfo.CSD;
         appendCrc<=0;
-        CardStatus[12:9] <=2;
+        cardInfo.CardStatus[12:9] <=2;
         end
 
 		  12: begin
-          response_CMD[127:96] <= CardStatus ;
+          response_CMD[127:96] <= cardInfo.CardStatus ;
           stop<=1;
 		  mult_write <= 0;
           mult_read <=0;
-         CardStatus[12:9] <= `TRAN;
+         cardInfo.CardStatus[12:9] <= `TRAN;
         end
 
 
         16 : begin
-          response_CMD[127:96] <= CardStatus ;
+          response_CMD[127:96] <= cardInfo.CardStatus ;
 
         end
 
@@ -497,11 +552,11 @@ always @ (posedge sdPin.clk) begin
 
         17 :  begin
           if (outDelayCnt==0) begin
-            if (CardStatus[12:9] == `TRAN) begin //If card is in transferstate
-                CardStatus[12:9] <=`DATAS;//Put card in data state
-                response_CMD[127:96] <= CardStatus ;
-                BlockAddr = inCmd[39:8];
-                if (BlockAddr%512 !=0)
+            if (cardInfo.CardStatus[12:9] == `TRAN) begin //If card is in transferstate
+                cardInfo.CardStatus[12:9] <=`DATAS;//Put card in data state
+                response_CMD[127:96] <= cardInfo.CardStatus ;
+                memFlash.BlockAddr = cardInfo.inCmd[39:8];
+                if (memFlash.BlockAddr%512 !=0)
                   $display("**Block Misalign Error");
           end
            else begin
@@ -514,12 +569,12 @@ always @ (posedge sdPin.clk) begin
 
      18 :  begin
           if (outDelayCnt==0) begin
-            if (CardStatus[12:9] == `TRAN) begin //If card is in transferstate
-                CardStatus[12:9] <=`DATAS;//Put card in data state
-                response_CMD[127:96] <= CardStatus ;
+            if (cardInfo.CardStatus[12:9] == `TRAN) begin //If card is in transferstate
+                cardInfo.CardStatus[12:9] <=`DATAS;//Put card in data state
+                response_CMD[127:96] <= cardInfo.CardStatus ;
 			    mult_read <= 1;
-                BlockAddr = inCmd[39:8];
-                if (BlockAddr%512 !=0)
+                memFlash.BlockAddr = cardInfo.inCmd[39:8];
+                if (memFlash.BlockAddr%512 !=0)
                   $display("**Block Misalign Error");
           end
            else begin
@@ -533,16 +588,16 @@ always @ (posedge sdPin.clk) begin
 
         24 : begin
           if (outDelayCnt==0) begin
-            if (CardStatus[12:9] == `TRAN) begin //If card is in transferstate
-              if (CardStatus[8]) begin //If Free write buffer
-                CardStatus[12:9] <=`RCV;//Put card in Rcv state
-                response_CMD[127:96] <= CardStatus ;
-                BlockAddr = inCmd[39:8];
-                if (BlockAddr%512 !=0)
+            if (cardInfo.CardStatus[12:9] == `TRAN) begin //If card is in transferstate
+              if (cardInfo.CardStatus[8]) begin //If Free write buffer
+                cardInfo.CardStatus[12:9] <=`RCV;//Put card in Rcv state
+                response_CMD[127:96] <= cardInfo.CardStatus ;
+                memFlash.BlockAddr = cardInfo.inCmd[39:8];
+                if (memFlash.BlockAddr%512 !=0)
                   $display("**Block Misalign Error");
               end
               else begin
-                response_CMD[127:96] <= CardStatus;
+                response_CMD[127:96] <= cardInfo.CardStatus;
                  $fdisplay(sdModel_file_desc, "**Error Try to blockwrite when No Free Writebuffer") ;
                  $display("**Error Try to blockwrite when No Free Writebuffer") ;
              end
@@ -555,17 +610,17 @@ always @ (posedge sdPin.clk) begin
        end
         25 : begin
           if (outDelayCnt==0) begin
-            if (CardStatus[12:9] == `TRAN) begin //If card is in transferstate
-              if (CardStatus[8]) begin //If Free write buffer
-                CardStatus[12:9] <=`RCV;//Put card in Rcv state
-                response_CMD[127:96] <= CardStatus ;
-                BlockAddr = inCmd[39:8];
+            if (cardInfo.CardStatus[12:9] == `TRAN) begin //If card is in transferstate
+              if (cardInfo.CardStatus[8]) begin //If Free write buffer
+                cardInfo.CardStatus[12:9] <=`RCV;//Put card in Rcv state
+                response_CMD[127:96] <= cardInfo.CardStatus ;
+                memFlash.BlockAddr = cardInfo.inCmd[39:8];
 				mult_write <= 1;
-                if (BlockAddr%512 !=0)
+                if (memFlash.BlockAddr%512 !=0)
                   $display("**Block Misalign Error");
               end
               else begin
-                response_CMD[127:96] <= CardStatus;
+                response_CMD[127:96] <= cardInfo.CardStatus;
                  $fdisplay(sdModel_file_desc, "**Error Try to blockwrite when No Free Writebuffer") ;
                  $display("**Error Try to blockwrite when No Free Writebuffer") ;
              end
@@ -580,50 +635,50 @@ always @ (posedge sdPin.clk) begin
         33 : response_CMD[127:96] <= 48;
         55 :
         begin
-          response_CMD[127:96] <= CardStatus ;
-          CardStatus[5] <=1;      //Next CMD is AP specific CMD
+          response_CMD[127:96] <= cardInfo.CardStatus ;
+          cardInfo.CardStatus[5] <=1;      //Next CMD is AP specific CMD
           appendCrc<=1;
         end
         41 :
         begin
-         if (cardIdentificationState) begin
-            if (lastCMD != 55 && outDelayCnt==0) begin
+         if (cardStatus.cardIdentificationState) begin
+            if (cardStatus.lastCMD != 55 && outDelayCnt==0) begin
                $fdisplay(sdModel_file_desc, "**Error in sequnce, CMD 55 should precede 41 in Startup state") ;
                $display( "**Error in sequnce, CMD 55 should precede 41 in Startup state") ;
-               CardStatus[3]<=1;
+               cardInfo.CardStatus[3]<=1;
             end
             else begin
              responseType=3;
-             response_CMD[127:96] <= OCR;
+             response_CMD[127:96] <= cardInfo.OCR;
              appendCrc<=0;
-             CardStatus[5] <=0;
-            if (Busy==1)
-              CardStatus[12:9] <=1;
+             cardInfo.CardStatus[5] <=0;
+            if (cardInfo.Busy==1)
+              cardInfo.CardStatus[12:9] <=1;
            end
         end
        end
 
     endcase
      ValidCmd<=1;
-     crcIn<=0;
+     cardInfo.crcIn<=0;
 
      outDelayCnt<=outDelayCnt+1;
      if (outDelayCnt==`outDelay)
-       crcRst<=1;
-     oeCmd<=1;
-     cmdOut<=1;
+       cardInfo.crcRst<=1;
+     sdOut.oeCmd<=1;
+     sdOut.cmdOut<=1;
      response_CMD[135:134] <=0;
 
     if (responseType != 3)
        if (!add_wrong_cmd_indx)
-         response_CMD[133:128] <=inCmd[45:40];
+         response_CMD[133:128] <=cardInfo.inCmd[45:40];
       else
          response_CMD[133:128] <=0;
 
     if (responseType == 3)
        response_CMD[133:128] <=6'b111111;
 
-     lastCMD <=inCmd[45:40];
+     cardStatus.lastCMD <=cardInfo.inCmd[45:40];
     end
    end
 
@@ -636,35 +691,35 @@ always @ ( negedge sdPin.clk) begin
  case(state)
 
 SEND_CMD: begin
-     crcRst<=0;
-     crcEn<=1;
-    cmdWrite<=cmdWrite+1;
+     cardInfo.crcRst<=0;
+     cardInfo.crcEn<=1;
+    cardInfo.cmdWrite<=cardInfo.cmdWrite+1;
     if (response_S!=0)
-     cmdOut<=0;
+     sdOut.cmdOut<=0;
    else
-      cmdOut<=1;
+      sdOut.cmdOut<=1;
 
-    if ((cmdWrite>0) &&  (cmdWrite < response_S-8)) begin
-      cmdOut<=response_CMD[135-cmdWrite];
-      crcIn<=response_CMD[134-cmdWrite];
-      if (cmdWrite >= response_S-9)
-       crcEn<=0;
+    if ((cardInfo.cmdWrite>0) &&  (cardInfo.cmdWrite < response_S-8)) begin
+      sdOut.cmdOut<=response_CMD[135-cardInfo.cmdWrite];
+      cardInfo.crcIn<=response_CMD[134-cardInfo.cmdWrite];
+      if (cardInfo.cmdWrite >= response_S-9)
+       cardInfo.crcEn<=0;
     end
-   else if (cmdWrite!=0) begin
-     crcEn<=0;
+   else if (cardInfo.cmdWrite!=0) begin
+     cardInfo.crcEn<=0;
      if (add_wrong_cmd_crc) begin
-        cmdOut<=0;
+        sdOut.cmdOut<=0;
         crcCnt<=crcCnt+1;
      end
      else begin
-     cmdOut<=crcOut[6-crcCnt];
+     sdOut.cmdOut<=crcOut[6-crcCnt];
      crcCnt<=crcCnt+1;
      if (responseType == 3)
-           cmdOut<=1;
+           sdOut.cmdOut<=1;
     end
    end
-  if (cmdWrite == response_S-1)
-    cmdOut<=1;
+  if (cardInfo.cmdWrite == response_S-1)
+    sdOut.cmdOut<=1;
 
   end
  endcase
@@ -684,22 +739,22 @@ always @ (posedge sdPin.clk) begin
   end
 
   READ_WAITS: begin
-      oeDat<=0;
+      sdOut.oeDat<=0;
       crcDat_rst<=0;
       crcDat_en<=1;
       crcDat_in<=0;
-      crc_c<=15;//
+      cardInfo.crc_c<=15;//
       crc_ok<=1;
   end
   READ_DATA: begin
 
 
-    InbuffStatus<=1;
-    if (transf_cnt<`BIT_BLOCK_REC) begin
+    memFlash.InbuffStatus<=1;
+    if (sdOut.transf_cnt<`BIT_BLOCK_REC) begin
        if (wptr)
-         Inbuff[block_cnt][3:0] <= sdPin.data;
+         memFlash.Inbuff[block_cnt][3:0] <= sdPin.data;
        else
-          Inbuff[block_cnt][7:4] <= sdPin.data;
+          memFlash.Inbuff[block_cnt][7:4] <= sdPin.data;
 
        if (!add_wrong_data_crc)
           crcDat_in<=sdPin.data;
@@ -707,37 +762,37 @@ always @ (posedge sdPin.clk) begin
           crcDat_in<=4'b1010;
 
        crc_ok<=1;
-       transf_cnt<=transf_cnt+1;
+       sdOut.transf_cnt<=sdOut.transf_cnt+1;
        if (wptr)
          block_cnt<=block_cnt+1;
        wptr<=~wptr;
 
 
     end
-    else if  ( transf_cnt <= (`BIT_BLOCK_REC +`BIT_CRC_CYCLE-1)) begin
-       transf_cnt<=transf_cnt+1;
+    else if  ( sdOut.transf_cnt <= (`BIT_BLOCK_REC +`BIT_CRC_CYCLE-1)) begin
+       sdOut.transf_cnt<=sdOut.transf_cnt+1;
        crcDat_en<=0;
        last_din <=sdPin.data;
 
-       if (transf_cnt> `BIT_BLOCK_REC) begin
-        crc_c<=crc_c-1;
+       if (sdOut.transf_cnt> `BIT_BLOCK_REC) begin
+        cardInfo.crc_c<=cardInfo.crc_c-1;
 
-          if (crcDat_out[0][crc_c] != last_din[0])
+          if (crcDat_out[0][cardInfo.crc_c] != last_din[0])
            crc_ok<=0;
-          if  (crcDat_out[1][crc_c] != last_din[1])
+          if  (crcDat_out[1][cardInfo.crc_c] != last_din[1])
            crc_ok<=0;
-          if  (crcDat_out[2][crc_c] != last_din[2])
+          if  (crcDat_out[2][cardInfo.crc_c] != last_din[2])
            crc_ok<=0;
-          if  (crcDat_out[3][crc_c] != last_din[3])
+          if  (crcDat_out[3][cardInfo.crc_c] != last_din[3])
            crc_ok<=0;
       end
     end
   end
   WRITE_FLASH: begin
-     oeDat<=1;
+     sdOut.oeDat<=1;
      block_cnt <=0;
      wptr<=0;
-     transf_cnt<=0;
+     sdOut.transf_cnt<=0;
      crcDat_rst<=1;
      crcDat_en<=0;
      crcDat_in<=0;
@@ -759,7 +814,7 @@ always @ (negedge sdPin.clk) begin
   case (dataState)
   DATA_IDLE: begin
      write_out_index<=0;
-     transf_cnt<=0;
+     sdOut.transf_cnt<=0;
      data_send_index<=0;
      outdly_cnt<=0;
      flash_write_cnt<=0;
@@ -767,11 +822,11 @@ always @ (negedge sdPin.clk) begin
 
 
    WRITE_DATA: begin
-      oeDat<=1;
+      sdOut.oeDat<=1;
       outdly_cnt<=outdly_cnt+1;
 
       if ( outdly_cnt > `DLY_TO_OUTP) begin
-         transf_cnt <= transf_cnt+1;
+         sdOut.transf_cnt <= sdOut.transf_cnt+1;
          crcDat_en<=1;
          crcDat_rst<=0;
 
@@ -779,27 +834,27 @@ always @ (negedge sdPin.clk) begin
       else begin
         crcDat_en<=0;
         crcDat_rst<=1;
-        oeDat<=1;
-        crc_c<=16;
+        sdOut.oeDat<=1;
+        cardInfo.crc_c<=16;
      end
 
-       if (transf_cnt==1) begin
+       if (sdOut.transf_cnt==1) begin
 
-          last_din <= FLASHmem[BlockAddr+(write_out_index)][7:4];
-          datOut<=0;
-          crcDat_in<= FLASHmem[BlockAddr+(write_out_index)][7:4];
+          last_din <= FLASHmem[memFlash.BlockAddr+(write_out_index)][7:4];
+          sdOut.datOut<=0;
+          crcDat_in<= FLASHmem[memFlash.BlockAddr+(write_out_index)][7:4];
           data_send_index<=1;
         end
-        else if ( (transf_cnt>=2) && (transf_cnt<=`BIT_BLOCK-`CRC_OFF )) begin
+        else if ( (sdOut.transf_cnt>=2) && (sdOut.transf_cnt<=`BIT_BLOCK-`CRC_OFF )) begin
           data_send_index<=~data_send_index;
           if (!data_send_index) begin
-             last_din<=FLASHmem[BlockAddr+(write_out_index)][7:4];
-             crcDat_in<= FLASHmem[BlockAddr+(write_out_index)][7:4];
+             last_din<=FLASHmem[memFlash.BlockAddr+(write_out_index)][7:4];
+             crcDat_in<= FLASHmem[memFlash.BlockAddr+(write_out_index)][7:4];
           end
           else begin
-             last_din<=FLASHmem[BlockAddr+(write_out_index)][3:0];
+             last_din<=FLASHmem[memFlash.BlockAddr+(write_out_index)][3:0];
              if (!add_wrong_data_crc)
-               crcDat_in<= FLASHmem[BlockAddr+(write_out_index)][3:0];
+               crcDat_in<= FLASHmem[memFlash.BlockAddr+(write_out_index)][3:0];
              else
                crcDat_in<=4'b1010;
              write_out_index<=write_out_index+1;
@@ -807,31 +862,31 @@ always @ (negedge sdPin.clk) begin
          end
 
 
-          datOut<= last_din;
+          sdOut.datOut<= last_din;
 
 
-          if ( transf_cnt >=`BIT_BLOCK-`CRC_OFF ) begin
+          if ( sdOut.transf_cnt >=`BIT_BLOCK-`CRC_OFF ) begin
              crcDat_en<=0;
          end
 
        end
-       else if (transf_cnt>`BIT_BLOCK-`CRC_OFF & crc_c!=0) begin
-         datOut<= last_din;
+       else if (sdOut.transf_cnt>`BIT_BLOCK-`CRC_OFF & cardInfo.crc_c!=0) begin
+         sdOut.datOut<= last_din;
          crcDat_en<=0;
-         crc_c<=crc_c-1;
-         if (crc_c<= 16) begin
-         datOut[0]<=crcDat_out[0][crc_c-1];
-         datOut[1]<=crcDat_out[1][crc_c-1];
-         datOut[2]<=crcDat_out[2][crc_c-1];
-         datOut[3]<=crcDat_out[3][crc_c-1];
+         cardInfo.crc_c<=cardInfo.crc_c-1;
+         if (cardInfo.crc_c<= 16) begin
+         sdOut.datOut[0]<=crcDat_out[0][cardInfo.crc_c-1];
+         sdOut.datOut[1]<=crcDat_out[1][cardInfo.crc_c-1];
+         sdOut.datOut[2]<=crcDat_out[2][cardInfo.crc_c-1];
+         sdOut.datOut[3]<=crcDat_out[3][cardInfo.crc_c-1];
        end
        end
-       else if (transf_cnt==`BIT_BLOCK-2) begin
-          datOut<=4'b1111;
+       else if (sdOut.transf_cnt==`BIT_BLOCK-2) begin
+          sdOut.datOut<=4'b1111;
       end
-       else if ((transf_cnt !=0) && (crc_c == 0 ))begin
-         oeDat<=0;
-         CardStatus[12:9] <= `TRAN;
+       else if ((sdOut.transf_cnt !=0) && (cardInfo.crc_c == 0 ))begin
+         sdOut.oeDat<=0;
+         cardInfo.CardStatus[12:9] <= `TRAN;
          end
 
 
@@ -842,37 +897,37 @@ always @ (negedge sdPin.clk) begin
 
   WRITE_FLASH: begin
     flash_write_cnt<=flash_write_cnt+1;
-     CardStatus[12:9] <= `PRG;
-      datOut[0]<=0;
-       datOut[1]<=1;
-       datOut[2]<=1;
-       datOut[3]<=1;
+     cardInfo.CardStatus[12:9] <= `PRG;
+      sdOut.datOut[0]<=0;
+       sdOut.datOut[1]<=1;
+       sdOut.datOut[2]<=1;
+       sdOut.datOut[3]<=1;
     if (flash_write_cnt == 0)
-      datOut<=1;
+      sdOut.datOut<=1;
     else if(flash_write_cnt == 1)
-     datOut[0]<=1;
+     sdOut.datOut[0]<=1;
     else if(flash_write_cnt == 2)
-     datOut[0]<=0;
+     sdOut.datOut[0]<=0;
 
 
     else if ((flash_write_cnt > 2) && (flash_write_cnt < 7)) begin
       if (crc_ok)
-        datOut[0] <=okcrctoken[6-flash_write_cnt];
+        sdOut.datOut[0] <=okcrctoken[6-flash_write_cnt];
       else
-        datOut[0] <= invalidcrctoken[6-flash_write_cnt];
+        sdOut.datOut[0] <= invalidcrctoken[6-flash_write_cnt];
     end
     else if  ((flash_write_cnt >= 7) && (flash_write_cnt < 264)) begin
-       datOut[0]<=0;
+       sdOut.datOut[0]<=0;
 
       flash_blockwrite_cnt<=flash_blockwrite_cnt+2;
-       FLASHmem[BlockAddr+(flash_blockwrite_cnt)]<=Inbuff[flash_blockwrite_cnt];
-       FLASHmem[BlockAddr+(flash_blockwrite_cnt+1)]<=Inbuff[flash_blockwrite_cnt+1];
+       FLASHmem[memFlash.BlockAddr+(flash_blockwrite_cnt)]<=memFlash.Inbuff[flash_blockwrite_cnt];
+       FLASHmem[memFlash.BlockAddr+(flash_blockwrite_cnt+1)]<=memFlash.Inbuff[flash_blockwrite_cnt+1];
 
     end
     else begin
-      datOut<=1;
-      InbuffStatus<=0;
-      CardStatus[12:9] <= `TRAN;
+      sdOut.datOut<=1;
+      memFlash.InbuffStatus<=0;
+      cardInfo.CardStatus[12:9] <= `TRAN;
     end
   end
 endcase
@@ -895,46 +950,46 @@ begin
    add_wrong_data_crc<=0;
   add_wrong_cmd_indx<=0;
   add_wrong_cmd_crc<=0;
- cardIdentificationState<=1;
+ cardStatus.cardIdentificationState<=1;
   state<=IDLE;
   dataState<=DATA_IDLE;
-  Busy<=0;
-  oeCmd<=0;
+  cardInfo.Busy<=0;
+  sdOut.oeCmd<=0;
   crcCnt<=0;
-  CardTransferActive<=0;
+  cardStatus.CardTransferActive<=0;
   qCmd<=1;
-  oeDat<=0;
-  cmdOut<=0;
-  cmdWrite<=0;
+  sdOut.oeDat<=0;
+  sdOut.cmdOut<=0;
+  cardInfo.cmdWrite<=0;
   startUppCnt<=0;
-  InbuffStatus<=0;
-  datOut<=0;
-  inCmd<=0;
-  BusWidth<=1;
+  memFlash.InbuffStatus<=0;
+  sdOut.datOut<=0;
+  cardInfo.inCmd<=0;
+  cardStatus.BusWidth<=1;
   responseType=0;
-  crcIn<=0;
+  cardInfo.crcIn<=0;
   response_S<=0;
-  crcEn<=0;
-  crcRst<=0;
-  cmdRead<=0;
+  cardInfo.crcEn<=0;
+  cardInfo.crcRst<=0;
+  cardInfo.cmdRead<=0;
   ValidCmd<=0;
-  inValidCmd=0;
+  inValidCmd<=0;
   appendCrc<=0;
-  RCA<= `RCASTART;
-  OCR<= `OCRSTART;
-  CardStatus <= `STATUSSTART;
-  CID<=`CIDSTART;
-  CSD<=`CSDSTART;
+  cardInfo.RCA<= `RCASTART;
+  cardInfo.OCR<= `OCRSTART;
+  cardInfo.CardStatus <= `STATUSSTART;
+  cardInfo.CID<=`CIDSTART;
+  cardInfo.CSD<=`CSDSTART;
   response_CMD<=0;
   outDelayCnt<=0;
   crcDat_rst<=1;
   crcDat_en<=0;
   crcDat_in<=0;
-  transf_cnt<=0;
-  BlockAddr<=0;
+  sdOut.transf_cnt<=0;
+  memFlash.BlockAddr<=0;
   block_cnt <=0;
      wptr<=0;
-     transf_cnt<=0;
+     sdOut.transf_cnt<=0;
      crcDat_rst<=1;
      crcDat_en<=0;
      crcDat_in<=0;
