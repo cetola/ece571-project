@@ -21,6 +21,8 @@ logic [15:0] RWA = 16'b0;  //-- row addr
 //-- RET 011=reset
 //-- RID 101= read ID
 
+//The "master" writes cmd and addr
+
 modport master (
   input clk,
   output cmd,
@@ -28,6 +30,8 @@ modport master (
   input done,
   output RWA
   );
+
+//The "slave" reads those cmd's and addr's and acts on them (read/write/erase)
 
 modport slave (
   input clk,

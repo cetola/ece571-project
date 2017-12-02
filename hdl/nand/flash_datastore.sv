@@ -58,10 +58,10 @@ always@(posedge fi.WE_n or fi.rst)
        $display($time,"ns : random read page command");
     end
     8'hff:begin
-       $display($time,"ns:  reset function ");
+       $display($time,"ns :  reset function ");
     end
     8'h90:begin
-        $display($time,"ns:  read ID function ");
+        $display($time,"ns : read ID function ");
     end
    endcase
   end

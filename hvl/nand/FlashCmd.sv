@@ -6,7 +6,7 @@
 // Thinking about commands as classes
 package FlashUtils;
 
-class flash_cmd;
+class FlashCmd;
   local logic [2:0] cmd;  // -- command see below
   local logic start;      //  -- pos edge (pulse) to start
   local logic done;        //  -- operation finished if '1'
