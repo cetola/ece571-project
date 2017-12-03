@@ -30,18 +30,21 @@ class FlashRD;
     this.address = addr;
   endfunction
 
-  function void setMaxVal(int val);
-    case(val)
+  function void setMaxVal(int prop);
+    case(prop)
         FlashRD::ADDR: this.address = '1;
         FlashRD::DATA: this.data = MAXDATA;
     endcase
   endfunction
 
-  function void setMinVal();
-    this.address = '0;
+  function void setMinVal(int prop);
+    case(prop)
+        FlashRD::ADDR: this.address = '0;
+        FlashRD::DATA: this.data = 0;
+    endcase
   endfunction
 
-  function void setAltVal();
+  function void setAltAddr();
     this.address = 16'haaaa;
   endfunction
 endclass

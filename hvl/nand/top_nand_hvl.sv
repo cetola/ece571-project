@@ -23,7 +23,7 @@ FlashRD rd;
   rd = new();
   top_nand_hdl.tbi.reset_wait();
 
-//----------RAND 
+//----------RANDOM
   for(int i=0; i<100; i++)
     begin
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
@@ -38,6 +38,17 @@ FlashRD rd;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     rd.setMaxVal(FlashRD::DATA);
     testData(rd);
+//----------------------MIN ADDR & DATA
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    rd.setMinVal(FlashRD::ADDR);
+    testData(rd);
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    rd.setMinVal(FlashRD::DATA);
+    testData(rd);
+//----------------------ALT ADDR
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    rd.setAltAddr();
+    testData(rd);
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);
   $fwrite(log, "Ran %4d tests.\n\n", tests);
@@ -51,7 +62,7 @@ FlashRD rd;
     input FlashRD rd;
     begin
     tests++;
-    $display("Test %d: addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
     //-----------------RESET
     top_nand_hdl.tbi.reset_cycle();
 

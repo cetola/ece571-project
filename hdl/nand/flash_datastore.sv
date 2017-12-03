@@ -28,6 +28,7 @@ always@(posedge fi.WE_n or fi.rst)
  end else
   if(!fi.CE_n && fi.CLE) begin
    command=fi.DIO;
+`ifdef DEBUG_FLASH
    case(command)
     8'h60:
       $display($time,"ns : auto block erase setup command");
@@ -64,6 +65,7 @@ always@(posedge fi.WE_n or fi.rst)
         $display($time,"ns : read ID function ");
     end
    endcase
+`endif
   end
 
 always@(posedge fi.WE_n or fi.rst)
@@ -167,16 +169,12 @@ always@(negedge fi.RE_n or fi.rst)// or fi.CE_n or fi.ALE or fi.CLE)
     con2_835<=12'h0;
     if(con==2'b00) begin
       datout<=8'hec;
-      $display($time,"ns : id code:%h",datout);
     end else if(con==2'b01) begin
       datout<=8'hf1;
-      $display($time,"ns : id code:%h",datout);
     end else if(con==2'b10) begin
       datout<=8'h00;
-      $display($time,"ns : id code:%h",datout);
     end else if(con==2'b11) begin
       datout<=8'h15;
-      $display($time,"ns : id code:%h",datout);
     end
   end else begin
     con2<=0;
