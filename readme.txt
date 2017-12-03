@@ -15,9 +15,7 @@ Assumes you are in the root directory.
 #### Testing NAND on Questa Sim
 ./setup/nand-setup.sh
 cd nand-con
-make MODULES=nand lib
-make MODULES=nand build
-make nand-run
+make all
 
 #### Testing SD on Questa Sim
 ./setup/sd-setup.sh
