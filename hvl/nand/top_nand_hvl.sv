@@ -50,6 +50,15 @@ FlashRD rd;
     rd.setAltAddr();
     testData(rd);
 
+//----------INJECT ERRORS
+//----------------------PROTOCOL VIOLATION
+    tests++;
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getData());
+    assert (top_nand_hdl.PErr) else $error("%m Should have seen a write error");
+
+
   $fwrite(log, "There were %4d errors found.\n\n", errs);
   $fwrite(log, "Ran %4d tests.\n\n", tests);
   $fwrite(log, "NAND Finish");

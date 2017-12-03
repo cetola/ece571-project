@@ -159,4 +159,41 @@ task read_id_cycle; //pragma tbx xtf
   end
 endtask : read_id_cycle
 
+// --------------------------------------------------------------------
+//    INJECT ERROR WRITE
+// --------------------------------------------------------------------
+// protocol violation
+task proto_error; //pragma tbx xtf
+    input [15:0]  address;
+    input [2047:0] d;
+    integer i;
+
+begin
+    @(posedge fc.clk);
+    fc.RWA = address;
+    //illegal command
+    fc.cmd = 3'b111;
+    fc.start = 1'b1;
+    buff.BF_sel = 1'b1;
+    @(posedge fc.clk);
+    fc.start = 1'b0;
+    buff.BF_ad = 0;
+    for(i=0;i<2048;i=i+1) begin
+       @(posedge fc.clk);
+       buff.BF_we = 1'b1;
+       memory[i]=d;
+       buff.BF_din <= memory[i];
+       buff.BF_ad <= #3 i;
+    end
+   @(posedge fc.clk);
+   @(posedge fc.clk);
+   buff.BF_we = 1'b0;
+   wait(fc.done);
+   @(posedge fc.clk);
+   fc.cmd = 3'b111;
+   buff.BF_sel = 1'b0;
+end
+endtask : proto_error
+
+
 endinterface
