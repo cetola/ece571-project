@@ -20,23 +20,15 @@ FlashRD rd;
 
   $fwrite(log,"NAND Begin:\n\n");
   rd = new();
-  assert (rd.randomize())
-  else $fatal(0, "FlashRD::randomize failed");
-  $display("wait for reset");
   top_nand_hdl.tbi.reset_wait();
-  $display("reset cycle");
-  top_nand_hdl.tbi.reset_cycle();
-  $display("erase cycle: %h", rd.getAddress());
-  top_nand_hdl.tbi.erase_cycle(rd.getAddress());
-  assert (!top_nand_hdl.EErr) else $error("%m Erase error");
-  $display("write cycle");
-  top_nand_hdl.tbi.write_cycle(16'h1234, $random % 256);
-  assert (!top_nand_hdl.PErr) else $error("%m Write error");
-  $display("read mem cycle");
-  top_nand_hdl.tbi.read_cycle(16'h1234);
-  assert (!top_nand_hdl.RErr) else $error("%m ECC error");
-  $display("read ID cycle");
-  top_nand_hdl.tbi.read_id_cycle(16'h0000);
+  
+  for(int i=0; i<2048; i++)
+    begin
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    $display("test %d", i);
+    testData(rd);
+    end
+
 
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);
@@ -45,5 +37,27 @@ FlashRD rd;
   $finish;
 
   end
+
+  task testData;
+    input FlashRD rd;
+    begin
+    $display("Test Data: addr:%h\tdata:%h", rd.getAddress(), rd.getData());
+    //-----------------RESET
+    top_nand_hdl.tbi.reset_cycle();
+
+    //-----------------ERASE
+    top_nand_hdl.tbi.erase_cycle(rd.getAddress());
+    assert (!top_nand_hdl.EErr) else $error("%m Erase error");
+
+    //-----------------WRITE
+    top_nand_hdl.tbi.write_cycle(rd.getAddress(), rd.getData());
+    assert (!top_nand_hdl.PErr) else $error("%m Write error");
+
+    //-----------------READ
+    top_nand_hdl.tbi.read_cycle(rd.getAddress());
+    assert (!top_nand_hdl.RErr) else $error("%m ECC error");
+    top_nand_hdl.tbi.read_id_cycle(rd.getAddress());
+    end
+  endtask
 
 endmodule

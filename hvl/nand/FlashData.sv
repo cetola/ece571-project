@@ -11,24 +11,19 @@ class FlashRD;
   randc int data;
   constraint c {data < 2049;}
 
-  function new();
-    this.data = '0;
-    this.address = '0;
-  endfunction
-
-  function getData();
+  function int getData();
     getData = this.data;
   endfunction
 
-  function setData(int d);
+  function void setData(int d);
     this.data = d;
   endfunction
 
-  function getAddress();
+  function bit [15:0] getAddress();
     getAddress = this.address;
   endfunction
 
-  function setAddress(bit [15:0] addr);
+  function void setAddress(bit [15:0] addr);
     this.address = addr;
   endfunction
 endclass
