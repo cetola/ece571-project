@@ -7,9 +7,12 @@
 package FlashData;
 
 class FlashRD;
+  static int ADDR = 0;
+  static int DATA = 1;
+  local const int MAXDATA = 2048;
   rand bit [15:0] address;
   randc int data;
-  constraint c {data < 2049;}
+  constraint c {data > -1; data < MAXDATA;}
 
   function int getData();
     getData = this.data;
@@ -25,6 +28,21 @@ class FlashRD;
 
   function void setAddress(bit [15:0] addr);
     this.address = addr;
+  endfunction
+
+  function void setMaxVal(int val);
+    case(val)
+        FlashRD::ADDR: this.address = '1;
+        FlashRD::DATA: this.data = MAXDATA;
+    endcase
+  endfunction
+
+  function void setMinVal();
+    this.address = '0;
+  endfunction
+
+  function void setAltVal();
+    this.address = 16'haaaa;
   endfunction
 endclass
 endpackage

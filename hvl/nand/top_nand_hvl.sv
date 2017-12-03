@@ -13,6 +13,7 @@ import FlashData::*;
 
 integer log = 1;
 int errs = 0;
+int tests = 0;
 FlashRD rd;
 
   initial begin
@@ -21,17 +22,25 @@ FlashRD rd;
   $fwrite(log,"NAND Begin:\n\n");
   rd = new();
   top_nand_hdl.tbi.reset_wait();
-  
-  for(int i=0; i<2048; i++)
+
+//----------RAND 
+  for(int i=0; i<100; i++)
     begin
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    $display("test %d", i);
     testData(rd);
     end
 
-
+//----------EDGE CASES
+//----------------------MAX ADDR & DATA
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    rd.setMaxVal(FlashRD::ADDR);
+    testData(rd);
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    rd.setMaxVal(FlashRD::DATA);
+    testData(rd);
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);
+  $fwrite(log, "Ran %4d tests.\n\n", tests);
   $fwrite(log, "NAND Finish");
   $fclose(log);
   $finish;
@@ -41,7 +50,8 @@ FlashRD rd;
   task testData;
     input FlashRD rd;
     begin
-    $display("Test Data: addr:%h\tdata:%h", rd.getAddress(), rd.getData());
+    tests++;
+    $display("Test %d: addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
     //-----------------RESET
     top_nand_hdl.tbi.reset_cycle();
 
