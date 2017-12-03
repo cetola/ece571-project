@@ -11,6 +11,8 @@ module top_nand_hvl;
 
 import FlashData::*;
 
+parameter NUMTEST = 500;
+
 integer log = 1;
 int errs = 0;
 int tests = 0;
@@ -24,7 +26,7 @@ FlashRD rd;
   top_nand_hdl.tbi.reset_wait();
 
 //----------RANDOM
-  for(int i=0; i<100; i++)
+  for(int i=0; i<NUMTEST-9; i++)
     begin
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
@@ -57,6 +59,18 @@ FlashRD rd;
     $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
     top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getData());
     assert (top_nand_hdl.PErr) else $error("%m Should have seen a write error");
+    //should work as before without errors
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    testData(rd);
+//----------------------ECC ERROR
+    tests++;
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    top_nand_hdl.tbi.ecc_error(rd.getAddress());
+    assert (top_nand_hdl.RErr) else $error("%m Should have seen a Read error");
+    //should work as before without errors
+    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
+    testData(rd);
 
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);

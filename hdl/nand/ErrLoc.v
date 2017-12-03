@@ -53,14 +53,14 @@ module ErrLoc(
       Res,
       F_ecc_data ,// -- ecc byte read fm flash
       WrECC,
-
-
+      error_bv,
       ECC_status
 );
   input    clk;
   input    Res;
   input  [6:0]  F_ecc_data ; //-- ecc byte read fm flash
   input    WrECC ;
+  input    error_bv;
 
   output reg ECC_status;
 
@@ -81,7 +81,7 @@ always@(posedge clk)
  if (Res)
   ECC_status <= 1'h0;
  else
-  ECC_status <= (check1 | check2 | check3);
+  ECC_status <= (check1 | check2 | check3 | error_bv);
 
 
 endmodule

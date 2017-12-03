@@ -195,5 +195,39 @@ begin
 end
 endtask : proto_error
 
+// ecc error
+task ecc_error; //pragma tbx xtf
+  input [15:0]  address;
+  integer i;
+  logic [7:0] temp;
+
+  begin
+  @(posedge fc.clk);
+  $root.top_nand_hdl.error_bv = 1;
+  temp<=8'h24;
+  #3;
+  fc.RWA = address;
+  fc.cmd = 3'b010;
+  fc.start = 1'b1;
+  buff.BF_sel = 1'b1;
+  buff.BF_we = 1'b0;
+  buff.BF_ad = #3 0;
+  @(posedge fc.clk);
+  #3;
+  fc.start = 1'b0;
+  @(posedge fc.clk);
+  wait(fc.done);
+  @(posedge fc.clk);
+  #3;
+  fc.cmd = 3'b111;
+  buff.BF_ad <= #3 buff.BF_ad + 1;
+  for(i=0;i<2048;i=i+1) begin
+    @(posedge fc.clk);
+    temp <= memory[i];
+    buff.BF_ad <= #3 buff.BF_ad + 1;
+  end
+  $root.top_nand_hdl.error_bv = 0;
+end
+endtask : ecc_error
 
 endinterface

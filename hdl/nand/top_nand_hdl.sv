@@ -21,6 +21,7 @@ module top_nand_hdl(); //pragma attribute top_hdl parition_module_xrtl
  wire PErr ; // -- progr err
  wire EErr ; // -- erase err
  wire RErr ;
+ bit error_bv ;
 
 parameter period=16;         // 60MHz
 
@@ -51,6 +52,7 @@ nfcm_top nfcm(
   .fi(nand_flash),
   .buff(buff.reader),
   .fc(fc.slave),
+  .error_bv(error_bv),
   .PErr(PErr),
   .EErr(EErr),
   .RErr(RErr)

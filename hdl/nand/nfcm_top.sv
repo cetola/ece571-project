@@ -10,6 +10,7 @@ module nfcm_top(
   PErr,
   EErr,
   RErr,
+  error_bv,
   fc
 );
 
@@ -21,6 +22,9 @@ flash_cmd_interface.slave fc;
  output reg PErr ; // -- progr err
  output reg EErr ; // -- erase err
  output reg RErr ;
+
+//-- Err Check
+  input error_bv ; // -- inject error
 
 parameter HI= 1'b1;
 parameter LO= 1'b0;
@@ -187,7 +191,7 @@ ErrLoc ecc_err_loc
       .Res (acnt_res),
       .F_ecc_data (FlashDataIn[6:0]),
       .WrECC (WrECC_e),
-
+      .error_bv (error_bv),
       .ECC_status (SetRrErr)
 );
 
