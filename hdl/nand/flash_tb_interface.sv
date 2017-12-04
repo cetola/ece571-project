@@ -14,7 +14,7 @@ interface flash_tb_interface(
   buffer_interface.writer buff,
   flash_interface fi); // pragma attribute flash_tb_interface partition_interface_xif
 
-logic [0:2047][7:0] memory;
+logic [7:0] memory[0:2047];
 
 task reset_wait(); //pragma tbx xtf
   @(negedge fi.rst);
@@ -65,11 +65,12 @@ endtask : erase_cycle
 
 task write_cycle; //pragma tbx xtf
     input [15:0]  address;
-    input [2047:0] d;
+    input string mem;
     integer i;
 
 begin
     @(posedge fc.clk);
+    $readmemh(mem, memory);
     #3;
     fc.RWA = address;
     fc.cmd = 3'b001;
@@ -83,7 +84,6 @@ begin
        @(posedge fc.clk);
        #3;
        buff.BF_we = 1'b1;
-       memory[i]=d;
        buff.BF_din <= memory[i];
        buff.BF_ad <= #3 i;
     end
@@ -165,11 +165,12 @@ endtask : read_id_cycle
 // protocol violation
 task proto_error; //pragma tbx xtf
     input [15:0]  address;
-    input [2047:0] d;
+    input string mem;
     integer i;
 
 begin
     @(posedge fc.clk);
+    $readmemh(mem, memory);
     fc.RWA = address;
     //illegal command
     fc.cmd = 3'b111;
@@ -181,7 +182,6 @@ begin
     for(i=0;i<2048;i=i+1) begin
        @(posedge fc.clk);
        buff.BF_we = 1'b1;
-       memory[i]=d;
        buff.BF_din <= memory[i];
        buff.BF_ad <= #3 i;
     end

@@ -3,22 +3,28 @@
 // Stephano Cetola <cetola@pdx.edu>
 //
 // Description:
-// Randomization for writing flash data.
+// Randomization for writing flash address.
 package FlashData;
 
 class FlashRD;
-  static int ADDR = 0;
-  static int DATA = 1;
-  local const int MAXDATA = 2048;
   rand bit [15:0] address;
-  randc int data;
-  constraint c {data > -1; data < MAXDATA;}
+  static logic [7:0] temp [0:2047];
+  string data;
 
-  function int getData();
+  function new(string d="nand.hex");
+    this.data = d;
+    for(int i=0;i<2048;i++) begin
+        FlashRD::temp[i] = $urandom_range(255);
+    end
+    $writememh(this.data, FlashRD::temp);
+  endfunction
+
+
+  function string getData();
     getData = this.data;
   endfunction
 
-  function void setData(int d);
+  function void setData(string d);
     this.data = d;
   endfunction
 
@@ -30,22 +36,16 @@ class FlashRD;
     this.address = addr;
   endfunction
 
-  function void setMaxVal(int prop);
-    case(prop)
-        FlashRD::ADDR: this.address = '1;
-        FlashRD::DATA: this.data = MAXDATA;
-    endcase
+  function void setMaxAddr();
+    this.address = '1;
   endfunction
 
-  function void setMinVal(int prop);
-    case(prop)
-        FlashRD::ADDR: this.address = '0;
-        FlashRD::DATA: this.data = 0;
-    endcase
+  function void setMinAddr();
+    this.address = '0;
   endfunction
 
   function void setAltAddr();
-    this.address = 16'haaaa;
+    this.address = 16'hAAAA;
   endfunction
 endclass
 endpackage

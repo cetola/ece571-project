@@ -59,7 +59,7 @@ endif
 
 run:
 
-	vsim -c -do nand.do top_nand_hvl top_nand_hdl
+	vsim -c -do nand.do -sv_seed 1234 top_nand_hvl top_nand_hdl
 
 clean:
-	rm -rf modelsim.ini work work.puresim work.veloce transcript veloce.log veloce.map veloce.med velrunopts.ini tbxbindings.h
+	rm -rf modelsim.ini work work.puresim work.veloce transcript veloce.log veloce.map veloce.med velrunopts.ini tbxbindings.h nand.hex nand.log

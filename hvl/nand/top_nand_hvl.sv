@@ -6,12 +6,13 @@
 // Provides top-level (NAND) HVL code which runs on the Co-Model Server.
 // Using Testbench Xpress (TBX) connection to Veloce, it employs the Bus
 // Functional Model (BFM) method, calling into tasks in top_nand_hdl.
+//TODO: rand data from readmemh
 
 module top_nand_hvl;
 
 import FlashData::*;
 
-parameter NUMTEST = 500;
+parameter NUMTEST = 10;
 
 integer log = 1;
 int errs = 0;
@@ -26,29 +27,20 @@ FlashRD rd;
   top_nand_hdl.tbi.reset_wait();
 
 //----------RANDOM
-  for(int i=0; i<NUMTEST-9; i++)
+  for(int i=0; i<NUMTEST-7; i++)
     begin
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
     end
 
 //----------EDGE CASES
-//----------------------MAX ADDR & DATA
-    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    rd.setMaxVal(FlashRD::ADDR);
+//----------------------MAX ADDR
+    rd.setMaxAddr();
     testData(rd);
-    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    rd.setMaxVal(FlashRD::DATA);
-    testData(rd);
-//----------------------MIN ADDR & DATA
-    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    rd.setMinVal(FlashRD::ADDR);
-    testData(rd);
-    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    rd.setMinVal(FlashRD::DATA);
+//----------------------MIN ADDR
+    rd.setMinAddr();
     testData(rd);
 //----------------------ALT ADDR
-    assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     rd.setAltAddr();
     testData(rd);
 
@@ -56,21 +48,23 @@ FlashRD rd;
 //----------------------PROTOCOL VIOLATION
     tests++;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    $display("Test:%d\t addr:%h", tests, rd.getAddress());
     top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getData());
     assert (top_nand_hdl.PErr) else $error("%m Should have seen a write error");
     //should work as before without errors
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
 //----------------------ECC ERROR
+//force an ECC error
     tests++;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
-    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    $display("Test:%d\t addr:%h", tests, rd.getAddress());
     top_nand_hdl.tbi.ecc_error(rd.getAddress());
     assert (top_nand_hdl.RErr) else $error("%m Should have seen a Read error");
     //should work as before without errors
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
+//TODO: check that ECC corrects the data by injecting errors into the datastream
 
 
   $fwrite(log, "There were %4d errors found.\n\n", errs);
@@ -85,7 +79,7 @@ FlashRD rd;
     input FlashRD rd;
     begin
     tests++;
-    $display("Test:%d\t addr:%h\tdata:%d", tests, rd.getAddress(), rd.getData());
+    $display("Test:%d\t addr:%h", tests, rd.getAddress());
     //-----------------RESET
     top_nand_hdl.tbi.reset_cycle();
 
