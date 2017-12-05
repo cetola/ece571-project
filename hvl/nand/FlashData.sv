@@ -7,25 +7,20 @@
 package FlashData;
 
 class FlashRD;
-  rand bit [15:0] address;
+  local randc bit [15:0] address;
   static logic [7:0] temp [0:2047];
-  string data;
+  local string hexFile;
 
-  function new(string d="nand.hex");
-    this.data = d;
+  function new(string f="nand.hex");
+    this.hexFile = f;
     for(int i=0;i<2048;i++) begin
         FlashRD::temp[i] = $urandom_range(255);
     end
-    $writememh(this.data, FlashRD::temp);
+    $writememh(this.hexFile, FlashRD::temp);
   endfunction
 
-
-  function string getData();
-    getData = this.data;
-  endfunction
-
-  function void setData(string d);
-    this.data = d;
+  function string getHexFile();
+    getHexFile = this.hexFile;
   endfunction
 
   function bit [15:0] getAddress();

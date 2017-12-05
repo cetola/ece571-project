@@ -49,7 +49,7 @@ FlashRD rd;
     tests++;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     $display("Test:%d\t addr:%h", tests, rd.getAddress());
-    top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getData());
+    top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getHexFile());
     assert (top_nand_hdl.PErr) else $error("%m Should have seen a write error");
     //should work as before without errors
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
@@ -88,7 +88,7 @@ FlashRD rd;
     assert (!top_nand_hdl.EErr) else $error("%m Erase error");
 
     //-----------------WRITE
-    top_nand_hdl.tbi.write_cycle(rd.getAddress(), rd.getData());
+    top_nand_hdl.tbi.write_cycle(rd.getAddress(), rd.getHexFile());
     assert (!top_nand_hdl.PErr) else $error("%m Write error");
 
     //-----------------READ
