@@ -7,7 +7,7 @@ SD Card Emulation with NAND storage.
 setup - veloce config, makefile, and simulation scripts
 hdl - synthesizable design files
 hvl - testbench files
-origionals - unmodified files used for reference
+originals - unmodified files used for reference
 
 ### Setup Instructions
 Assumes you are in the root directory.
@@ -23,6 +23,9 @@ make run-inject-err
 ./setup/sd-setup.sh
 cd sd-con/sim/rtl_sim/run/
 vsim -do comp.do
+##This integrates SV code into the original design. sdModel.sv and sd_controller_top_tb.sv were modified from existing 
+Verilog files (added assertions, enumerated datatypes, final block, warning and error messages, structures).
+SDInterfaces.sv was added to act as an interface between sdModel.sv and sd_controller_top_tb.sv.
 
 #### Testing SPI on Questa Sim
 ./setup/spi-setup.sh
