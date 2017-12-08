@@ -274,11 +274,11 @@ READ_CMD: begin
      next_state =  READ_CMD;
  end
  ANALYZE_CMD: begin
-	$display("",);
   if ((ValidCmd  )   && (outDelayCnt >= `outDelay ))
      next_state = SEND_CMD;
   else if (inValidCmd)
      next_state =  IDLE;
+	
  else
     next_state =  ANALYZE_CMD;
  end
@@ -556,8 +556,9 @@ always @ (posedge sdPin.clk) begin
                 cardInfo.CardStatus[12:9] <=`DATAS;//Put card in data state
                 response_CMD[127:96] <= cardInfo.CardStatus ;
                 memFlash.BlockAddr = cardInfo.inCmd[39:8];
-                if (memFlash.BlockAddr%512 !=0)
-                  $display("**Block Misalign Error");
+                assert (memFlash.BlockAddr%512 == 0) else $error("**Block Misalign Error");
+		//if (memFlash.BlockAddr%512 !=0)
+                  //$display("**Block Misalign Error");
           end
            else begin
              response_S <= 0;
@@ -574,8 +575,9 @@ always @ (posedge sdPin.clk) begin
                 response_CMD[127:96] <= cardInfo.CardStatus ;
 			    mult_read <= 1;
                 memFlash.BlockAddr = cardInfo.inCmd[39:8];
-                if (memFlash.BlockAddr%512 !=0)
-                  $display("**Block Misalign Error");
+		assert (memFlash.BlockAddr%512 == 0) else $error("**Block Misalign Error");
+                //if (memFlash.BlockAddr%512 !=0)
+                  //$display("**Block Misalign Error");
           end
            else begin
              response_S <= 0;
@@ -594,12 +596,15 @@ always @ (posedge sdPin.clk) begin
                 response_CMD[127:96] <= cardInfo.CardStatus ;
                 memFlash.BlockAddr = cardInfo.inCmd[39:8];
                 if (memFlash.BlockAddr%512 !=0)
-                  $display("**Block Misalign Error");
+                  assert (memFlash.BlockAddr%512 == 0) else $error("**Block Misalign Error");
+                //if (memFlash.BlockAddr%512 !=0)
+                  //$display("**Block Misalign Error");
               end
               else begin
                 response_CMD[127:96] <= cardInfo.CardStatus;
-                 $fdisplay(sdModel_file_desc, "**Error Try to blockwrite when No Free Writebuffer") ;
-                 $display("**Error Try to blockwrite when No Free Writebuffer") ;
+                $fdisplay(sdModel_file_desc, "**Error Try to blockwrite when No Free Writebuffer") ;
+                $error("Try to blockwrite when No Free Writebuffer");
+		//$display("**Error Try to blockwrite when No Free Writebuffer") ;
              end
            end
            else begin
@@ -617,12 +622,15 @@ always @ (posedge sdPin.clk) begin
                 memFlash.BlockAddr = cardInfo.inCmd[39:8];
 				mult_write <= 1;
                 if (memFlash.BlockAddr%512 !=0)
-                  $display("**Block Misalign Error");
+                  assert (memFlash.BlockAddr%512 == 0) else $error("**Block Misalign Error");
+                //if (memFlash.BlockAddr%512 !=0)
+                  //$display("**Block Misalign Error");
               end
               else begin
                 response_CMD[127:96] <= cardInfo.CardStatus;
                  $fdisplay(sdModel_file_desc, "**Error Try to blockwrite when No Free Writebuffer") ;
-                 $display("**Error Try to blockwrite when No Free Writebuffer") ;
+                 $error("Try to blockwrite when No Free Writebuffer");
+		//$display("**Error Try to blockwrite when No Free Writebuffer") ;
              end
            end
            else begin
@@ -644,7 +652,7 @@ always @ (posedge sdPin.clk) begin
          if (cardStatus.cardIdentificationState) begin
             if (cardStatus.lastCMD != 55 && outDelayCnt==0) begin
                $fdisplay(sdModel_file_desc, "**Error in sequnce, CMD 55 should precede 41 in Startup state") ;
-               $display( "**Error in sequnce, CMD 55 should precede 41 in Startup state") ;
+               $error( "**Error in sequnce, CMD 55 should precede 41 in Startup state") ;
                cardInfo.CardStatus[3]<=1;
             end
             else begin
@@ -940,8 +948,9 @@ begin
   sdModel_file_desc = $fopen("../log/sd_model.log");
   if (sdModel_file_desc < 2)
   begin
-    $display("*E Could not open/create testbench log file in /log/ directory!");
-    $finish;
+	$fatal("Could not open/create testbench log file in /log/ directory!");
+    //$display("*E Could not open/create testbench log file in /log/ directory!");
+    //$finish;
   end
 end
 
@@ -998,5 +1007,11 @@ flash_blockwrite_cnt<=0;
 end
 endtask
 
+
+property cmd;
+@(posedge sdPin.clk) //disable iff (reset || clear)
+   (state == ANALYZE_CMD) |=> inValidCmd;//##[1:400] qCmd;//|=> count == $past(din);
+endproperty
+assert_cmd: assert property(cmd) else $warning("Invalid command!");
 
 endmodule
