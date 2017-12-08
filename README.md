@@ -18,6 +18,7 @@ Assumes you are in the root directory.
 ./setup/nand-setup.sh  
 cd nand-con  
 make all  
+make run-inject-err  
 ```
 
 #### Testing SD on Questa Sim

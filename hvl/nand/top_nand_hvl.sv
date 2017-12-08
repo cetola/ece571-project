@@ -18,11 +18,10 @@ integer log = 1;
 int errs = 0;
 int tests = 0;
 FlashRD rd;
-
+  
   initial begin
   assert ((log = $fopen("nand.log")) != 0) else $error("%m can't open file nand.log.");
-
-  $fwrite(log,"NAND Begin:\n\n");
+  $fdisplay(log,"NAND Begin:");
   rd = new();
   top_nand_hdl.tbi.reset_wait();
 
@@ -46,11 +45,13 @@ FlashRD rd;
 
 //----------INJECT ERRORS
 //----------------------PROTOCOL VIOLATION
+if($test$plusargs("INJECTERR")) begin
     tests++;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     $display("Test:%d\t addr:%h", tests, rd.getAddress());
+    $fdisplay(log, "Test:%d\t addr:%h", tests, rd.getAddress());
     top_nand_hdl.tbi.proto_error(rd.getAddress(), rd.getHexFile());
-    assert (top_nand_hdl.PErr) else $error("%m Should have seen a write error");
+    assert (!top_nand_hdl.PErr) else $error("%m Write error, we expect to see this.");
     //should work as before without errors
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
@@ -59,17 +60,18 @@ FlashRD rd;
     tests++;
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     $display("Test:%d\t addr:%h", tests, rd.getAddress());
+    $fdisplay(log, "Test:%d\t addr:%h", tests, rd.getAddress());
     top_nand_hdl.tbi.ecc_error(rd.getAddress());
-    assert (top_nand_hdl.RErr) else $error("%m Should have seen a Read error");
+    assert (!top_nand_hdl.RErr) else $error("%m Read error, we expect to see this.");
     //should work as before without errors
     assert (rd.randomize()) else $fatal(0, "FlashRD::randomize failed");
     testData(rd);
 //TODO: check that ECC corrects the data by injecting errors into the datastream
+end //INJECTERR
 
-
-  $fwrite(log, "There were %4d errors found.\n\n", errs);
-  $fwrite(log, "Ran %4d tests.\n\n", tests);
-  $fwrite(log, "NAND Finish");
+  $fdisplay(log, "There were %4d errors found.", errs);
+  $fdisplay(log, "Ran %4d tests.", tests);
+  $fdisplay(log, "NAND Finish");
   $fclose(log);
   $finish;
 
@@ -80,18 +82,23 @@ FlashRD rd;
     begin
     tests++;
     $display("Test:%d\t addr:%h", tests, rd.getAddress());
+    $fdisplay(log, "Test:%d\t addr:%h", tests, rd.getAddress());
     //-----------------RESET
+    $fdisplay(log, "RESET");
     top_nand_hdl.tbi.reset_cycle();
 
     //-----------------ERASE
+    $fdisplay(log, "ERASE");
     top_nand_hdl.tbi.erase_cycle(rd.getAddress());
     assert (!top_nand_hdl.EErr) else $error("%m Erase error");
 
     //-----------------WRITE
+    $fdisplay(log, "WRITE");
     top_nand_hdl.tbi.write_cycle(rd.getAddress(), rd.getHexFile());
     assert (!top_nand_hdl.PErr) else $error("%m Write error");
 
     //-----------------READ
+    $fdisplay(log, "READ");
     top_nand_hdl.tbi.read_cycle(rd.getAddress());
     assert (!top_nand_hdl.RErr) else $error("%m ECC error");
     top_nand_hdl.tbi.read_id_cycle(rd.getAddress());
