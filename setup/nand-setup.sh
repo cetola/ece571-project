@@ -12,7 +12,7 @@ cp hvl/nand/* nand-con/
 cp setup/* nand-con/
 
 #CD into nand-con and setup git for change tracking.
-cd nand-con
-git init
-git add --all
-git commit -m "init"
+#cd nand-con
+#git init
+#git add --all
+#git commit -m "init"

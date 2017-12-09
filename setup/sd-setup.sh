@@ -14,7 +14,7 @@ mkdir -p sd-con/sim/rtl_sim/log
 chmod -R a+r sd-con
 
 #CD into nand-con and setup git for change tracking.
-cd sd-con
-git init
-git add --all
-git commit -m "init"
+#cd sd-con
+#git init
+#git add --all
+#git commit -m "init"
