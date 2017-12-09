@@ -32,4 +32,4 @@ SDInterfaces.sv was added to act as an interface between sdModel.sv and sd_contr
 cd spi-con
 vlib work
 vlog *.sv
-vsim top -do spi.do
+vsim upTop -do spi.do

@@ -8,8 +8,6 @@ interface SPIBus(); 				//SPI INTERFACE
 parameter NUMSLAVES = 1;			//parameterising number of slaves
 parameter type DTYPE = logic [7:0];	
 
-import usefull::*;
-
 logic SCLK;
 logic MOSI;
 logic [NUMSLAVES-1:0] MISO;
